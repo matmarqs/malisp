@@ -1,7 +1,12 @@
 CC=gcc
 CFLAGS=-g -std=c99 -Wall
-LDFLAGS=-lreadline
+LDFLAGS=-lreadline -lm
 TARGET=a.out
 
-$(TARGET): main.c
+all: $(TARGET) doge.out
+
+$(TARGET): parsing.c mpc.c
+	$(CC) $(CFLAGS) $? $(LDFLAGS) -o $@
+
+doge.out: doge_code.c mpc.c
 	$(CC) $(CFLAGS) $? $(LDFLAGS) -o $@

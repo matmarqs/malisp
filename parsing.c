@@ -4,6 +4,8 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
+#include "mpc.h"
+
 int main(int argc, char **argv) {
     puts("malisp version 0.0.0.1");
     puts("Press Ctrl+c to exit");
