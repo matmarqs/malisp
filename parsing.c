@@ -13,11 +13,11 @@ int main(int argc, char **argv) {
     mpc_parser_t *Lispy = mpc_new("lispy");
 
     mpca_lang(MPCA_LANG_DEFAULT,
-    "                                                         \
-        number   : /-?[0-9]+/ ;                               \
-        operator : '+' | '-' | '*' | '/' ;                    \
-        expr     : <number> | '(' <operator> <expr>+ ')' ;    \
-        lispy    : /^/ <operator> <expr>+ /$/ ;               \
+    "                                                                                     \
+        number   : /-?[0-9]+/ ;                                                           \
+        operator : '+' | '-' | '*' | '/' | '%' | \"div\" | \"add\" | \"sub\" | \"mul\" ;  \
+        expr     : <number> | '(' <operator> <expr>+ ')' ;                                \
+        lispy    : /^/ <operator> <expr>+ /$/ ;                                           \
     ", Number, Operator, Expr, Lispy);    
 
     puts("malisp version 0.0.0.1");
@@ -25,6 +25,8 @@ int main(int argc, char **argv) {
 
     while (1) {    
         char *input = readline("lisp> ");
+        if (!input)
+            break;
         add_history(input);
 
         mpc_result_t r;
