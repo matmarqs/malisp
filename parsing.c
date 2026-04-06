@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
         lispy    : /^/ <operator> <expr>+ /$/ ;               \
     ", Number, Operator, Expr, Lispy);    
 
-    puts("malisp version 0.0.0.1");
+    puts("malisp version 0.0.0.3");
     puts("Press Ctrl+c to exit");
 
     while (1) {    
