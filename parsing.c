@@ -7,6 +7,8 @@
 
 #include "mpc.h"
 
+#define VERSION "0.0.0.4"
+
 /* enumeration of possible lval types */
 enum { LVAL_NUM, LVAL_ERR };
 
@@ -36,7 +38,7 @@ lval lval_err(int x) {
 void lval_print(lval v) {
     switch (v.type) {
     case LVAL_NUM:
-        printf("%li", v.num);
+        printf("%li\n", v.num);
         break;
     case LVAL_ERR:
         switch(v.err) {
@@ -54,24 +56,32 @@ void lval_print(lval v) {
     }
 }
 
-int64_t eval_op(int64_t x, char *op, int64_t y) {
-    if (strcmp(op, "+") == 0) { return x + y; }
-    if (strcmp(op, "-") == 0) { return x - y; }
-    if (strcmp(op, "*") == 0) { return x * y; }
-    if (strcmp(op, "/") == 0) { return x / y; }
-    return 0;
+lval eval_op(lval x, char *op, lval y) {
+    // if either value is an error
+    if (x.type == LVAL_ERR) { return x; }
+    if (y.type == LVAL_ERR) { return y; }
+
+    if (strcmp(op, "+") == 0) { return lval_num(x.num + y.num); }
+    if (strcmp(op, "-") == 0) { return lval_num(x.num - y.num); }
+    if (strcmp(op, "*") == 0) { return lval_num(x.num * y.num); }
+    if (strcmp(op, "/") == 0) {
+        return y.num == 0 ? lval_err(LERR_DIV_ZERO) : lval_num(x.num / y.num);
+    }
+    return lval_err(LERR_BAD_OP);
 }
 
-int64_t eval(mpc_ast_t *t) {
+lval eval(mpc_ast_t *t) {
     // if it is a number, return directly (base case)
     if (strstr(t->tag, "number")) {
-        return atoi(t->contents);
+        errno = 0;
+        uint64_t x = strtoll(t->contents, NULL, 10);
+        return errno != ERANGE ? lval_num(x) : lval_err(LERR_BAD_NUM);
     }
 
     // the operator is always the second child    
     char *op = t->children[1]->contents;
 
-    uint64_t acc = eval(t->children[2]);
+    lval acc = eval(t->children[2]);
     for (int i = 3; strstr(t->children[i]->tag, "expr"); i++) {
         acc = eval_op(acc, op, eval(t->children[i]));
     }
@@ -92,7 +102,7 @@ int main(int argc, char **argv) {
         lispy    : /^/ <operator> <expr>+ /$/ ;               \
     ", Number, Operator, Expr, Lispy);    
 
-    puts("malisp version 0.0.0.3");
+    puts("malisp version " VERSION);
     puts("Press Ctrl+c to exit");
 
     while (1) {    
@@ -104,8 +114,10 @@ int main(int argc, char **argv) {
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, Lispy, &r)) {
             // On success print the AST
-            mpc_ast_print(r.output);
-            printf("\nResult: %lld\n", (long long) eval(r.output));
+            //mpc_ast_print(r.output);
+            lval v = eval(r.output);
+            //printf("\nResult: ");
+            lval_print(v);
             mpc_ast_delete(r.output);            
         }
         else {
