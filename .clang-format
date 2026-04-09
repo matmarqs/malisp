@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: false      # int main() {
+  AfterControlStatement: Never   # if (x) {
+  AfterElse: false           # else on new line
+  AfterSwitch: false        # switch (x) {
+  IndentCaseLabels: true
+
+ColumnLimit: 100
