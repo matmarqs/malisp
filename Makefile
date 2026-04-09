@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-g -std=c99 -Wall
-LDFLAGS=-lreadline -lm
+CFLAGS=-g -std=c99 -Wall $(shell pkg-config --cflags libeditline)
+LDFLAGS=$(shell pkg-config --libs libeditline) -lm
 
 all: test
 
