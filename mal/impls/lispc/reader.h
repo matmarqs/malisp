@@ -12,8 +12,8 @@ typedef struct {
 
 enum {
     MAL_LIST,
-    MAL_OP,
     MAL_NUMBER,
+    MAL_SYMBOL,
 };
 
 typedef struct mal_list_t mal_list_t;
@@ -23,7 +23,7 @@ typedef struct mal_t {
     union {
         mal_list_t *list;
         uint64_t number;
-        char op;
+        struct { char *str; int str_len; } symbol;
     } data;
 } mal_t;
 
@@ -35,6 +35,7 @@ typedef struct {
     mal_reader_token_t token;
     pcre2_code *re;
     pcre2_match_data *match_data;
+    PCRE2_SIZE offset;
 } mal_reader_t;
 
 mal_t read_str(char *str);

@@ -29,7 +29,8 @@ bool mal_rep() {
         return false;
     }
     mal_t root = read_str(input);
-    pr_str(root);
+    pr_str(&root);
+    putchar('\n');
     //input = mal_print(input);
     free(input);
     return true;

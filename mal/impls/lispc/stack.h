@@ -10,7 +10,6 @@
         int top;                                       \
         int capacity;                                  \
     };                                                 \
-    static void prefix##_inner_resize(name *stack);    \
     name *prefix##_create(int initial_capacity);       \
     bool prefix##_is_empty(name *stack);               \
     bool prefix##_is_full(name *stack);                \

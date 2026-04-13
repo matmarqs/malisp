@@ -11,6 +11,7 @@ static void mal_reader_init(mal_reader_t *reader, char *buffer) {
     reader->size = strlen(buffer);
     reader->token.pos = NULL;
     reader->token.size = 0;
+    reader->offset = 0;
     /* Regex: [\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*) */
     /* [\s,]*: ignores all whitespaces or commas */
     /* ~@: captures the 2 special characters ~@ */
@@ -47,7 +48,7 @@ static int mal_reader_next(mal_reader_t *reader) {
     PCRE2_SIZE subject_size = reader->size;
     pcre2_code *re = reader->re;
     pcre2_match_data *match_data = reader->match_data;
-    static PCRE2_SIZE offset = 0;
+    PCRE2_SIZE offset = reader->offset;
     if (offset < subject_size) {
         int rc = pcre2_match(re, subject, PCRE2_ZERO_TERMINATED, offset, 0, match_data, NULL);
         if (rc < 0) {
@@ -55,22 +56,26 @@ static int mal_reader_next(mal_reader_t *reader) {
         }
         else {
             PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-            PCRE2_SPTR start = subject + ovector[0];
-            PCRE2_SIZE len = ovector[1] - ovector[0];
-            offset = (!len) ? offset + 1 : ovector[1];
+            PCRE2_SPTR start = subject + ovector[2];
+            PCRE2_SIZE len = ovector[3] - ovector[2];
+            reader->offset = (!len) ? offset + 1 : ovector[1];
             reader->token.pos = start;
             reader->token.size = len;
+            //printf("DEBUG: Found token: '%.*s'\n", (int)reader->token.size, reader->token.pos);
             return offset;
         }
     }
     return -1;
 }
 
-static mal_t create_op(char op) {
+static mal_t create_symbol(char *token, int token_sz) {
     mal_t x = {
-        .type = MAL_OP,
+        .type = MAL_SYMBOL,
         .data = {
-            .op = op,
+            .symbol = {
+                .str = token,
+                .str_len = token_sz,
+            },
         },
     };
     return x;
@@ -89,24 +94,15 @@ static mal_t create_num(int64_t num) {
 static mal_t read_atom(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
     int token_size = reader->token.size;
-    if (strncmp(token, "+", 1)) {
-        return create_op('+');
-    }
-    else if (strncmp(token, "-", 1)) {
-        return create_op('-');
-    }
-    else if (strncmp(token, "*", 1)) {
-        return create_op('*');
-    }
-    else if (strncmp(token, "/", 1)) {
-        return create_op('/');
-    }
     // match a number here
     errno = 0;
     char *end;
     int64_t num = strtoll(token, &end, 10);
-    bool range_error = errno == ERANGE;
-    return create_num(num);
+    if (errno != ERANGE && end != token && *end == '\0') {
+        return create_num(num);
+    }
+    // match symbols
+    return create_symbol(token, token_size);
 }
 
 static mal_t read_form(mal_reader_t *reader);
@@ -128,7 +124,7 @@ static mal_t read_list(mal_reader_t *reader) {
         }
         char *token = (char *)reader->token.pos;
         int token_size = reader->token.size;
-        if (strncmp(token, ")", 1)) {
+        if (strncmp(token, ")", 1) == 0) {
             break;
         }
         mal_t mal_object = read_form(reader);
@@ -153,6 +149,7 @@ static mal_t read_form(mal_reader_t *reader) {
 mal_t read_str(char *str) {
     mal_reader_t reader;
     mal_reader_init(&reader, str);
-    mal_t root = read_list(&reader);
+    mal_reader_next(&reader);
+    mal_t root = read_form(&reader);
     return root;
 }

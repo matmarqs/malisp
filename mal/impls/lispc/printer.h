@@ -3,6 +3,6 @@
 
 #include "reader.h"
 
-void pr_str(mal_t mal_object);
+void pr_str(mal_t *mal_object);
 
 #endif // _PRINTER_H
