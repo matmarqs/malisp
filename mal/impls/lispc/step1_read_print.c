@@ -2,6 +2,8 @@
 #include <editline.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "reader.h"
+#include "printer.h"
 
 char *mal_read() {
     char *input = readline("user> ");
@@ -26,8 +28,9 @@ bool mal_rep() {
         puts("");
         return false;
     }
-    input = mal_eval(input);
-    input = mal_print(input);
+    mal_t root = read_str(input);
+    pr_str(root);
+    //input = mal_print(input);
     free(input);
     return true;
 }

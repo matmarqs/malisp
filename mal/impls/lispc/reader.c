@@ -1,37 +1,12 @@
-#define PCRE2_CODE_UNIT_WIDTH 8
-#include <pcre2.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <errno.h>
 
-typedef struct {
-    PCRE2_SPTR pos;
-    PCRE2_SIZE size;
-} mal_reader_token_t;
+#include "reader.h"
+IMPLEMENT_STACK(mal_t, mal_list, mal_list_t);
 
-enum {
-    MAL_LIST,
-    MAL_OP,
-    MAL_NUMBER,
-};
-
-typedef struct mal_t {
-    uint8_t type;
-    union {
-        struct mal_t *list;
-        uint64_t number;
-        char op;
-    } data;
-} mal_t;
-
-typedef struct {
-    char *buffer;
-    size_t size;
-    mal_reader_token_t token;
-    pcre2_code *re;
-    pcre2_match_data *match_data;
-} mal_reader_t;
-
-void mal_reader_init(mal_reader_t *reader, char *buffer) {
+static void mal_reader_init(mal_reader_t *reader, char *buffer) {
     reader->buffer = buffer;
     reader->size = strlen(buffer);
     reader->token.pos = NULL;
@@ -62,12 +37,12 @@ void mal_reader_init(mal_reader_t *reader, char *buffer) {
     reader->match_data = pcre2_match_data_create_from_pattern(reader->re, NULL);
 }
 
-void mal_reader_free(mal_reader_t *reader) {
+static void mal_reader_free(mal_reader_t *reader) {
     pcre2_match_data_free(reader->match_data);
     pcre2_code_free(reader->re);
 }
 
-int mal_reader_next(mal_reader_t *reader) {
+static int mal_reader_next(mal_reader_t *reader) {
     PCRE2_SPTR subject = (PCRE2_SPTR) reader->buffer;
     PCRE2_SIZE subject_size = reader->size;
     pcre2_code *re = reader->re;
@@ -91,7 +66,7 @@ int mal_reader_next(mal_reader_t *reader) {
     return -1;
 }
 
-mal_t create_op(char op) {
+static mal_t create_op(char op) {
     mal_t x = {
         .type = MAL_OP,
         .data = {
@@ -101,7 +76,17 @@ mal_t create_op(char op) {
     return x;
 }
 
-mal_t read_atom(mal_reader_t *reader) {
+static mal_t create_num(int64_t num) {
+    mal_t x = {
+        .type = MAL_NUMBER,
+        .data = {
+            .number = num,
+        },
+    };
+    return x;
+}
+
+static mal_t read_atom(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
     int token_size = reader->token.size;
     if (strncmp(token, "+", 1)) {
@@ -117,19 +102,44 @@ mal_t read_atom(mal_reader_t *reader) {
         return create_op('/');
     }
     // match a number here
+    errno = 0;
+    char *end;
+    int64_t num = strtoll(token, &end, 10);
+    bool range_error = errno == ERANGE;
+    return create_num(num);
 }
 
-mal_t read_form(mal_reader_t *reader);
+static mal_t read_form(mal_reader_t *reader);
 
-mal_t read_list(mal_reader_t *reader) {
+static mal_t read_list(mal_reader_t *reader) {
+    mal_t root = {
+        .type = MAL_LIST,
+        .data = {
+            .list = NULL,
+        },
+    };
+    mal_list_t *list = mal_list_create(5);
     do {
-        mal_t read_form(reader);
+        int offset = mal_reader_next(reader);
+        if (offset == -1) {
+            // EOF error
+            printf("read_list: Error, offset == -1, EOF\n");
+            break;
+        }
+        char *token = (char *)reader->token.pos;
+        int token_size = reader->token.size;
+        if (strncmp(token, ")", 1)) {
+            break;
+        }
+        mal_t mal_object = read_form(reader);
+        mal_list_push(list, mal_object);
     } while (1);
-    return NULL;
+    root.data.list = list;
+    return root;
 }
 
-mal_t read_form(mal_reader_t *reader) {
-    int offset = mal_reader_next(reader);
+static mal_t read_form(mal_reader_t *reader) {
+    // peek at the current token of Reader object
     char *token = (char *)reader->token.pos;
     int token_size = reader->token.size;
     if (strncmp(token, "(", 1) == 0) {
@@ -140,7 +150,9 @@ mal_t read_form(mal_reader_t *reader) {
     }
 }
 
-void read_str(char *str) {
-    mal_reader_t *reader = tokenize(str);
-    read_form(reader);
+mal_t read_str(char *str) {
+    mal_reader_t reader;
+    mal_reader_init(&reader, str);
+    mal_t root = read_list(&reader);
+    return root;
 }
