@@ -1,10 +1,8 @@
+#include "reader.h"
+
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
 #include <errno.h>
-
-#include "reader.h"
-IMPLEMENT_STACK(mal_t, mal_list, mal_list_t);
 
 static void mal_reader_init(mal_reader_t *reader, char *buffer) {
     reader->buffer = buffer;
@@ -68,30 +66,8 @@ static int mal_reader_next(mal_reader_t *reader) {
     return -1;
 }
 
-static mal_t create_symbol(char *token, int token_sz) {
-    mal_t x = {
-        .type = MAL_SYMBOL,
-        .data = {
-            .symbol = {
-                .str = token,
-                .str_len = token_sz,
-            },
-        },
-    };
-    return x;
-}
 
-static mal_t create_num(int64_t num) {
-    mal_t x = {
-        .type = MAL_NUMBER,
-        .data = {
-            .number = num,
-        },
-    };
-    return x;
-}
-
-static mal_t read_atom(mal_reader_t *reader) {
+static mal_obj_t read_atom(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
     int token_size = reader->token.size;
     // match a number here
@@ -99,22 +75,16 @@ static mal_t read_atom(mal_reader_t *reader) {
     char *end;
     int64_t num = strtoll(token, &end, 10);
     if (errno != ERANGE && end != token && *end == '\0') {
-        return create_num(num);
+        return mal_obj_num(num);
     }
     // match symbols
-    return create_symbol(token, token_size);
+    return mal_obj_symbol(token, token_size);
 }
 
-static mal_t read_form(mal_reader_t *reader);
+static mal_obj_t read_form(mal_reader_t *reader);
 
-static mal_t read_list(mal_reader_t *reader) {
-    mal_t root = {
-        .type = MAL_LIST,
-        .data = {
-            .list = NULL,
-        },
-    };
-    mal_list_t *list = mal_list_create(5);
+static mal_obj_t read_list(mal_reader_t *reader) {
+    mal_obj_t root = mal_obj_list();
     do {
         int offset = mal_reader_next(reader);
         if (offset == -1) {
@@ -123,21 +93,23 @@ static mal_t read_list(mal_reader_t *reader) {
             break;
         }
         char *token = (char *)reader->token.pos;
-        int token_size = reader->token.size;
+        //int token_size = reader->token.size;
         if (strncmp(token, ")", 1) == 0) {
             break;
         }
-        mal_t mal_object = read_form(reader);
-        mal_list_push(list, mal_object);
+        mal_obj_t mal_object = read_form(reader);
+        mal_list_push(root.data.list, mal_object);
     } while (1);
-    root.data.list = list;
     return root;
 }
 
-static mal_t read_form(mal_reader_t *reader) {
+static mal_obj_t read_form(mal_reader_t *reader) {
     // peek at the current token of Reader object
     char *token = (char *)reader->token.pos;
-    int token_size = reader->token.size;
+    if (!token) {
+        return mal_obj_symbol("", 0);
+    }
+    //int token_size = reader->token.size;
     if (strncmp(token, "(", 1) == 0) {
         return read_list(reader);
     }
@@ -146,10 +118,14 @@ static mal_t read_form(mal_reader_t *reader) {
     }
 }
 
-mal_t read_str(char *str) {
+mal_obj_t read_str(char *str) {
     mal_reader_t reader;
     mal_reader_init(&reader, str);
     mal_reader_next(&reader);
-    mal_t root = read_form(&reader);
+    /* if (mal_reader_next(&reader) == -1) { */
+    /*     return mal_obj_symbol("", 0); // return empty symbol */
+    /* } */
+    mal_obj_t root = read_form(&reader);
+    mal_reader_free(&reader);
     return root;
 }

@@ -1,9 +1,10 @@
+#include "mal_obj.h"
+#include "reader.h"
+
 #include <stdio.h>
 #include <editline.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "reader.h"
-#include "printer.h"
 
 char *mal_read() {
     char *input = readline("user> ");
@@ -28,10 +29,10 @@ bool mal_rep() {
         puts("");
         return false;
     }
-    mal_t root = read_str(input);
-    pr_str(&root);
-    putchar('\n');
+    mal_obj_t root = read_str(input);
+    mal_obj_println(&root);
     //input = mal_print(input);
+    mal_obj_free(&root);
     free(input);
     return true;
 }

@@ -17,6 +17,7 @@
     type prefix##_pop(name *stack);                    \
     type prefix##_peek(name *stack);                   \
     void prefix##_free(name *stack);                   \
+    int prefix##_len(name *stack);
 
 #define IMPLEMENT_STACK(type, prefix, name)                             \
     static void prefix##_inner_resize(name *stack) {                    \
@@ -25,7 +26,6 @@
         stack->items = new_items;                                       \
         stack->capacity = new_capacity;                                 \
     }                                                                   \
-                                                                        \
     name *prefix##_create(int initial_capacity) {                       \
         name *stack = (name *)malloc(sizeof(name));                     \
         stack->items = (type *)malloc(initial_capacity * sizeof(type)); \
@@ -33,33 +33,30 @@
         stack->capacity = initial_capacity;                             \
         return stack;                                                   \
     }                                                                   \
-                                                                        \
     bool prefix##_is_empty(name *stack) {                               \
         return stack->top == -1;                                        \
     }                                                                   \
-                                                                        \
     bool prefix##_is_full(name *stack) {                                \
         return stack->top == stack->capacity - 1;                       \
     }                                                                   \
-                                                                        \
     void prefix##_push(name *stack, type item) {                        \
         if (prefix##_is_full(stack)) {                                  \
             prefix##_inner_resize(stack);                               \
         }                                                               \
         stack->items[++stack->top] = item;                              \
     }                                                                   \
-                                                                        \
     type prefix##_pop(name *stack) {                                    \
         return stack->items[stack->top--];                              \
     }                                                                   \
-                                                                        \
     type prefix##_peek(name *stack) {                                   \
         return stack->items[stack->top];                                \
     }                                                                   \
-                                                                        \
     void prefix##_free(name *stack) {                                   \
         free(stack->items);                                             \
         free(stack);                                                    \
+    }                                                                   \
+    int prefix##_len(name *stack) {                                     \
+        return stack->top + 1;                                          \
     }
 
 #endif // STACK_H
