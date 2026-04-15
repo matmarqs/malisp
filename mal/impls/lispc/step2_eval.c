@@ -15,24 +15,39 @@ char *mal_read() {
     return input;
 }
 
-mal_obj_t *mal_eval(mal_obj_t *root, fun_table_t *ftab) {
+void mal_eval(mal_obj_t *node, fun_table_t *ftab) {
     fun_t f;
-    switch (root->type) {
+    mal_obj_t first_symbol;
+    switch (node->type) {
     case MAL_SYMBOL:
-        f = fun_table_get(ftab, root->data.symbol);
+        f = fun_table_get(ftab, node->data.symbol);
         if (f) {
-            return root;
+            return; // it's okay
         }
         else {
-            // throw error "not found"
+            // not okay, change the node to be an MAL_ERROR
+            printf("type = %d, str = %.*s, len = %d\n", node->type, node->data.symbol.len, node->data.symbol.str, node->data.symbol.len); // debugging line
+            *node = mal_obj_error(ERROR_STR_SYMBOL_NOT_FOUND);
         }
         break;
     case MAL_LIST:
-        for (int i = 0; i < mal_list_len(root->data.list); i++) {
-
+        if (!mal_list_is_empty(node->data.list)) {
+            for (int i = 0; i < mal_list_len(node->data.list); i++) {
+                mal_eval(&node->data.list->items[i], ftab);
+            }
+            if (node->data.list->items[0].type == MAL_SYMBOL) {
+                mal_list_pop_front(node->data.list, &first_symbol);
+                f = fun_table_get(ftab, first_symbol.data.symbol);
+                f(node);
+            }
+            else {
+                mal_obj_free(node);
+                *node = mal_obj_error(ERROR_STR_FIRST_NOT_SYMBOL);
+            }
         }
-        if (!mal_list_is_empty(root->data.list)) {
-        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -48,10 +63,8 @@ bool mal_rep(fun_table_t *ftab) {
         return false;
     }
     mal_obj_t root = read_str(input);
-    //mal_obj_println(&root);
-    //input = mal_print(input);
-    mal_obj_t evald = mal_eval(&root, ftab);
-    mal_print(&evald);
+    mal_eval(&root, ftab);
+    mal_print(&root);
     mal_obj_free(&root);
     free(input);
     return true;

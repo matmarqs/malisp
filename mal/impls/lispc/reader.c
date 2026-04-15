@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "mal_obj.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -70,6 +71,7 @@ static mal_obj_t read_atom(mal_reader_t *reader) {
     errno = 0;
     char *end;
     int64_t num = strtoll(token, &end, 10);
+    printf("DEBUG: token = '%.*s', size = %d\n", token_size, token, token_size);
     if (errno != ERANGE && end != token && *end == '\0') {
         return mal_obj_num(num);
     }
@@ -94,7 +96,7 @@ static mal_obj_t read_list(mal_reader_t *reader) {
             break;
         }
         mal_obj_t mal_object = read_form(reader);
-        mal_list_push(root.data.list, mal_object);
+        mal_list_push_back(root.data.list, mal_object);
     } while (1);
     return root;
 }

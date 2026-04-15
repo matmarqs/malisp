@@ -1,5 +1,5 @@
 #include "mal_obj.h"
-IMPLEMENT_STACK(mal_obj_t, mal_list, mal_list_t);
+IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
 #include <stdio.h>
 
@@ -26,6 +26,19 @@ mal_obj_t mal_obj_num(int64_t num) {
     return x;
 }
 
+mal_obj_t mal_obj_error(char *error_cstr) {
+    mal_obj_t x = {
+        .type = MAL_ERROR,
+        .data = {
+            .error = {
+                .str = error_cstr,
+                .len = strlen(error_cstr),
+            },
+        },
+    };
+    return x;
+}
+
 mal_obj_t mal_obj_list(void) {
     mal_obj_t x = {
         .type = MAL_LIST,
@@ -40,6 +53,7 @@ void mal_obj_free(mal_obj_t *x) {
     switch (x->type) {
     case MAL_SYMBOL:
     case MAL_NUMBER:
+    case MAL_ERROR:
         break;
     case MAL_LIST:
         for (int i = 0; i < mal_list_len(x->data.list); i++) {
@@ -66,6 +80,9 @@ void mal_obj_print(mal_obj_t *mal_object) {
             }
         }
         putchar(')');
+        break;
+    case MAL_ERROR:
+        printf("%.*s", mal_object->data.error.len, mal_object->data.error.str);
         break;
     }
 }

@@ -5,7 +5,7 @@
 #include "hashmap.h"
 #include "str.h"
 
-typedef mal_obj_t (*fun_t)(mal_obj_t *); // function: mal_obj_t -> mal_obj_t
+typedef void (*fun_t)(mal_obj_t *); // function: mal_obj_t -> mal_obj_t
 
 //              type_name   prefix     key     value  NOT_FOUND_key
 DEFINE_HASHMAP(fun_table_t, fun_table, string_t, fun_t, NULL);

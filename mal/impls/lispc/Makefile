@@ -10,7 +10,7 @@ step0_repl: step0_repl.c
 step1_read_print: step1_read_print.c reader.c mal_obj.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-step2_eval: step2_eval.c reader.c mal_obj.c fun_hash.c
+step2_eval: step2_eval.c reader.c mal_obj.c fun_hash.c str.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
