@@ -2,6 +2,7 @@
 #define _MAL_H
 
 #include "stack.h"
+#include "str.h"
 
 #include <stdint.h>
 
@@ -18,7 +19,7 @@ typedef struct mal_obj_t {
     union {
         mal_list_t *list;
         uint64_t number;
-        struct { char *str; int str_len; } symbol;
+        string_t symbol;
     } data;
 } mal_obj_t;
 
@@ -29,6 +30,5 @@ mal_obj_t mal_obj_num(int64_t num);
 mal_obj_t mal_obj_list(void);
 void mal_obj_free(mal_obj_t *mal_object);
 void mal_obj_print(mal_obj_t *mal_object);
-void mal_obj_println(mal_obj_t *mal_object);
 
 #endif // _MAL_H

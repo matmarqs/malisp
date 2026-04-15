@@ -5,11 +5,8 @@
 #include <errno.h>
 
 static void mal_reader_init(mal_reader_t *reader, char *buffer) {
-    reader->buffer = buffer;
-    reader->size = strlen(buffer);
-    reader->token.pos = NULL;
-    reader->token.size = 0;
-    reader->offset = 0;
+    reader->buffer = str_from_cstr(buffer);
+    reader->token = (mal_reader_token_t) { .pos = NULL, .size = 0, .offset = 0};
     /* Regex: [\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*) */
     /* [\s,]*: ignores all whitespaces or commas */
     /* ~@: captures the 2 special characters ~@ */
@@ -42,11 +39,11 @@ static void mal_reader_free(mal_reader_t *reader) {
 }
 
 static int mal_reader_next(mal_reader_t *reader) {
-    PCRE2_SPTR subject = (PCRE2_SPTR) reader->buffer;
-    PCRE2_SIZE subject_size = reader->size;
+    PCRE2_SPTR subject = (PCRE2_SPTR) reader->buffer.str;
+    PCRE2_SIZE subject_size = reader->buffer.len;
     pcre2_code *re = reader->re;
     pcre2_match_data *match_data = reader->match_data;
-    PCRE2_SIZE offset = reader->offset;
+    PCRE2_SIZE offset = reader->token.offset;
     if (offset < subject_size) {
         int rc = pcre2_match(re, subject, PCRE2_ZERO_TERMINATED, offset, 0, match_data, NULL);
         if (rc < 0) {
@@ -56,7 +53,7 @@ static int mal_reader_next(mal_reader_t *reader) {
             PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
             PCRE2_SPTR start = subject + ovector[2];
             PCRE2_SIZE len = ovector[3] - ovector[2];
-            reader->offset = (!len) ? offset + 1 : ovector[1];
+            reader->token.offset = (!len) ? offset + 1 : ovector[1];
             reader->token.pos = start;
             reader->token.size = len;
             //printf("DEBUG: Found token: '%.*s'\n", (int)reader->token.size, reader->token.pos);
@@ -65,7 +62,6 @@ static int mal_reader_next(mal_reader_t *reader) {
     }
     return -1;
 }
-
 
 static mal_obj_t read_atom(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;

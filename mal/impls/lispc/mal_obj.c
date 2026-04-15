@@ -9,7 +9,7 @@ mal_obj_t mal_obj_symbol(char *token, int token_sz) {
         .data = {
             .symbol = {
                 .str = token,
-                .str_len = token_sz,
+                .len = token_sz,
             },
         },
     };
@@ -53,7 +53,7 @@ void mal_obj_free(mal_obj_t *x) {
 void mal_obj_print(mal_obj_t *mal_object) {
     switch (mal_object->type) {
     case MAL_SYMBOL:
-        printf("%.*s", mal_object->data.symbol.str_len, mal_object->data.symbol.str);
+        printf("%.*s", mal_object->data.symbol.len, mal_object->data.symbol.str);
         break;
     case MAL_NUMBER:
         printf("%lld", (long long)mal_object->data.number); break;
@@ -68,9 +68,4 @@ void mal_obj_print(mal_obj_t *mal_object) {
         putchar(')');
         break;
     }
-}
-
-void mal_obj_println(mal_obj_t *mal_object) {
-    mal_obj_print(mal_object);
-    putchar('\n');
 }
