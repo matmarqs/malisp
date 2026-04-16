@@ -21,12 +21,13 @@
     bool prefix##_peek_front(name *deque, type *out);       \
     bool prefix##_peek_back(name *deque, type *out);        \
     void prefix##_free(name *deque);                        \
-    int prefix##_len(name *deque);
+    int prefix##_len(name *deque);                          \
+    type *prefix##_get(name *deque, int index);             \
+    bool prefix##_set(name *deque, int index, type value);
 
 #define IMPLEMENT_DEQUE(type, prefix, name)                             \
     static void prefix##_inner_resize(name *deque, int new_cap) {       \
         type *new_items = (type *)malloc(new_cap * sizeof(type));       \
-        /* Copy elements in order, re-centering at start  */            \
         for (int i = 0; i < deque->count; i++) {                        \
             int src = (deque->start + i) % deque->cap;                  \
             new_items[i] = deque->items[src];                           \
@@ -105,6 +106,17 @@
     }                                                                   \
     int prefix##_len(name *deque) {                                     \
         return deque->count;                                            \
+    }                                                                   \
+    type *prefix##_get(name *deque, int index) {                        \
+        if (index < 0 || index >= deque->count) return NULL;            \
+        int phys = (deque->start + index) % deque->cap;                 \
+        return &deque->items[phys];                                     \
+    }                                                                   \
+    bool prefix##_set(name *deque, int index, type value) {             \
+        if (index < 0 || index >= deque->count) return false;           \
+        int phys = (deque->start + index) % deque->cap;                 \
+        deque->items[phys] = value;                                     \
+        return true;                                                    \
     }
 
 #endif // DEQUE_H

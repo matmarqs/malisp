@@ -14,7 +14,8 @@ size_t str_hash(string_t s) {
 bool str_equals(string_t a, string_t b) {
     if (a.str == b.str) return true;
     if (!a.str || !b.str) return false;
-    return a.len == b.len && strcmp(a.str, b.str) == 0;
+    if (a.len != b.len) return false;
+    return memcmp(a.str, b.str, a.len) == 0;
 }
 
 // assume null terminated string as input

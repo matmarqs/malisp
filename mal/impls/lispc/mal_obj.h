@@ -19,7 +19,7 @@ typedef struct mal_obj_t {
     uint8_t type;
     union {
         mal_list_t *list;
-        uint64_t number;
+        int64_t number;
         string_t symbol;
         string_t error;
     } data;
@@ -39,5 +39,7 @@ void mal_obj_print(mal_obj_t *mal_object);
 #define ERROR_STR_EVAL_NON_LIST "Error: Tried to evaluate a non-list object"
 #define ERROR_STR_EVAL_EMPTY_LIST "Error: Tried to evaluate empty list"
 #define ERROR_STR_EXPECTED_NUMBER "Error: Expected number"
+#define ERROR_STR_NEED_AT_LEAST_2_ARGS "Error: Need at least 2 arguments"
+#define ERROR_STR_DIVISION_BY_ZERO "Error: Encountered division by zero"
 
 #endif // _MAL_H

@@ -67,12 +67,41 @@ static int mal_reader_next(mal_reader_t *reader) {
 static mal_obj_t read_atom(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
     int token_size = reader->token.size;
-    // match a number here
-    errno = 0;
-    char *end;
-    int64_t num = strtoll(token, &end, 10);
-    printf("DEBUG: token = '%.*s', size = %d\n", token_size, token, token_size);
-    if (errno != ERANGE && end != token && *end == '\0') {
+    // Check if it's a negative number: starts with '-' followed by digits
+    int is_negative = 0;
+    int start_idx = 0;
+    if (token_size > 1 && token[0] == '-') {
+        // Check if remaining chars are digits
+        int all_digits = 1;
+        for (int i = 1; i < token_size; i++) {
+            if (token[i] < '0' || token[i] > '9') {
+                all_digits = 0;
+                break;
+            }
+        }
+        if (all_digits) {
+            is_negative = 1;
+            start_idx = 1;
+        }
+    }
+    // Check if it's a positive number (all digits)
+    int is_positive = 1;
+    if (!is_negative) {
+        for (int i = 0; i < token_size; i++) {
+            if (token[i] < '0' || token[i] > '9') {
+                is_positive = 0;
+                break;
+            }
+        }
+    }
+    if (is_positive || is_negative) {
+        int64_t num = 0;
+        for (int i = start_idx; i < token_size; i++) {
+            num = num * 10 + (token[i] - '0');
+        }
+        if (is_negative) {
+            num = -num;
+        }
         return mal_obj_num(num);
     }
     // match symbols

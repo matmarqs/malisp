@@ -57,7 +57,7 @@ void mal_obj_free(mal_obj_t *x) {
         break;
     case MAL_LIST:
         for (int i = 0; i < mal_list_len(x->data.list); i++) {
-            mal_obj_free(&x->data.list->items[i]);
+            mal_obj_free(mal_list_get(x->data.list, i));
         }
         mal_list_free(x->data.list);
         break;
@@ -74,7 +74,7 @@ void mal_obj_print(mal_obj_t *mal_object) {
     case MAL_LIST:
         putchar('(');
         for (int i = 0; i < mal_list_len(mal_object->data.list); i++) {
-            mal_obj_print(&mal_object->data.list->items[i]);
+            mal_obj_print(mal_list_get(mal_object->data.list, i));
             if (i != mal_list_len(mal_object->data.list)-1) {
                 putchar(' ');
             }
