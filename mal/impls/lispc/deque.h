@@ -1,5 +1,5 @@
-#ifndef DEQUE_H
-#define DEQUE_H
+#ifndef _DEQUE_H
+#define _DEQUE_H
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -119,4 +119,4 @@
         return true;                                                    \
     }
 
-#endif // DEQUE_H
+#endif // _DEQUE_H

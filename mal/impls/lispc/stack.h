@@ -1,5 +1,5 @@
-#ifndef STACK_H
-#define STACK_H
+#ifndef _STACK_H
+#define _STACK_H
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -59,4 +59,4 @@
         return stack->top + 1;                                          \
     }
 
-#endif // STACK_H
+#endif // _STACK_H

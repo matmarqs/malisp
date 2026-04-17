@@ -1,7 +1,10 @@
+#ifndef _HASHMAP_H
+#define _HASHMAP_H
+
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define DEFINE_HASHMAP(name, prefix, key_type, val_type, NOT_FOUND) \
+#define DEFINE_HASHMAP(name, prefix, key_type, val_type) \
     typedef enum { FREE, OCCUPIED, DELETED } name##_SlotState;      \
     typedef struct {                                                \
         key_type key;                                               \
@@ -13,15 +16,14 @@
         int size;                                                   \
         int capacity;                                               \
         int threshold;                                              \
-        val_type not_found;                                         \
     } name;                                                         \
     name *prefix##_init(int initial_capacity);                      \
     void prefix##_free(name *map);                                  \
-    val_type prefix##_get(name *map, key_type key);                 \
+    bool prefix##_get(name *map, key_type key, val_type *out);      \
     void prefix##_set(name *map, key_type key, val_type val);       \
     void prefix##_remove(name *map, key_type key);
 
-#define IMPLEMENT_HASHMAP(name, prefix, key_type, val_type, NOT_FOUND, hash_func, key_equals) \
+#define IMPLEMENT_HASHMAP(name, prefix, key_type, val_type, hash_func, key_equals) \
     static int prefix##_next_power_of_two(int n) {                      \
         if (n <= 1) return 1;                                           \
         int power = 1;                                                  \
@@ -57,25 +59,26 @@
         }                                                               \
         map->size = 0;                                                  \
         map->threshold = (int)(map->capacity * 0.7);                    \
-        map->not_found = NOT_FOUND;                                     \
         return map;                                                     \
     }                                                                   \
     void prefix##_free(name *map) {                                     \
         free(map->slots);                                               \
         free(map);                                                      \
     }                                                                   \
-    val_type prefix##_get(name *map, key_type key) {                    \
-        if (map->size == 0) return map->not_found;                      \
+    bool prefix##_get(name *map, key_type key, val_type *out) {         \
+        if (map->size == 0) return false;                               \
         size_t hash_val = hash_func(key);                               \
         int idx = (int)(hash_val & (map->capacity - 1));                \
         for (int i = 0; i < map->capacity; i++) {                       \
             int j = (idx + i) & (map->capacity - 1);                    \
             if (map->slots[j].state == FREE) break;                     \
             if (map->slots[j].state == OCCUPIED &&                      \
-                key_equals(map->slots[j].key, key))                     \
-                return map->slots[j].val;                               \
+                key_equals(map->slots[j].key, key)) {                   \
+                if (out) *out = map->slots[j].val;                      \
+                return true;                                            \
+            }                                                           \
         }                                                               \
-        return map->not_found;                                          \
+        return false;                                                   \
     }                                                                   \
     void prefix##_set(name *map, key_type key, val_type val) {          \
         if (map->size >= map->threshold) {                              \
@@ -129,3 +132,5 @@
             }                                                           \
         }                                                               \
     }
+
+#endif // _HASHMAP_H

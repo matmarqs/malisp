@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-IMPLEMENT_HASHMAP(fun_table_t, fun_table, string_t, fun_t, NULL, str_hash, str_equals);
+IMPLEMENT_HASHMAP(fun_table_t, fun_table, string_t, fun_t, str_hash, str_equals);
 
 void builtin_add(mal_obj_t *x) {
     if (x->type != MAL_LIST) {

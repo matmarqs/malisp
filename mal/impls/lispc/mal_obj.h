@@ -41,5 +41,6 @@ void mal_obj_print(mal_obj_t *mal_object);
 #define ERROR_STR_EXPECTED_NUMBER "Error: Expected number"
 #define ERROR_STR_NEED_AT_LEAST_2_ARGS "Error: Need at least 2 arguments"
 #define ERROR_STR_DIVISION_BY_ZERO "Error: Encountered division by zero"
+#define ERROR_STR_NOT_FOUND_IN_ENV "Error: Symbol not found in environment"
 
 #endif // _MAL_H
