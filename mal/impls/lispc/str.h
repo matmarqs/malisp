@@ -12,5 +12,6 @@ typedef struct {
 size_t str_hash(string_t s);
 bool str_equals(string_t a, string_t b);
 string_t str_from_cstr(char *s);
+string_t str_copy(string_t s);
 
 #endif // _STR_H

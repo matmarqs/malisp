@@ -6,6 +6,7 @@ IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 mal_obj_t mal_obj_symbol(char *token, int token_sz) {
     mal_obj_t x = {
         .type = MAL_SYMBOL,
+        .persistent = false,
         .data = {
             .symbol = {
                 .str = token,
@@ -16,9 +17,21 @@ mal_obj_t mal_obj_symbol(char *token, int token_sz) {
     return x;
 }
 
+mal_obj_t mal_obj_symbol_persistent(string_t str_to_copy) {
+    mal_obj_t x = {
+        .type = MAL_SYMBOL,
+        .persistent = true,
+        .data = {
+            .symbol = str_copy(str_to_copy),
+        },
+    };
+    return x;
+}
+
 mal_obj_t mal_obj_num(int64_t num) {
     mal_obj_t x = {
         .type = MAL_NUMBER,
+        .persistent = false,
         .data = {
             .number = num,
         },
@@ -29,6 +42,7 @@ mal_obj_t mal_obj_num(int64_t num) {
 mal_obj_t mal_obj_error(char *error_cstr) {
     mal_obj_t x = {
         .type = MAL_ERROR,
+        .persistent = false,
         .data = {
             .error = {
                 .str = error_cstr,
@@ -42,6 +56,7 @@ mal_obj_t mal_obj_error(char *error_cstr) {
 mal_obj_t mal_obj_list(void) {
     mal_obj_t x = {
         .type = MAL_LIST,
+        .persistent = true,
         .data = {
             .list = mal_list_create(4), // alloc list in the heap
         },
@@ -49,17 +64,31 @@ mal_obj_t mal_obj_list(void) {
     return x;
 }
 
+mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
+    mal_obj_t x = {
+        .type = MAL_BUILTIN,
+        .persistent = false,
+        .data = {
+            .builtin_fn = fn_ptr,
+        },
+    };
+    return x;
+}
+
 void mal_obj_free(mal_obj_t *x) {
+    if (!x->persistent)
+        return;
     switch (x->type) {
-    case MAL_SYMBOL:
-    case MAL_NUMBER:
-    case MAL_ERROR:
-        break;
     case MAL_LIST:
         for (int i = 0; i < mal_list_len(x->data.list); i++) {
             mal_obj_free(mal_list_get(x->data.list, i));
         }
         mal_list_free(x->data.list);
+        break;
+    case MAL_SYMBOL:
+        free(x->data.symbol.str);
+        break;
+    default:
         break;
     }
 }
@@ -70,7 +99,8 @@ void mal_obj_print(mal_obj_t *mal_object) {
         printf("%.*s", mal_object->data.symbol.len, mal_object->data.symbol.str);
         break;
     case MAL_NUMBER:
-        printf("%lld", (long long)mal_object->data.number); break;
+        printf("%lld", (long long)mal_object->data.number);
+        break;
     case MAL_LIST:
         putchar('(');
         for (int i = 0; i < mal_list_len(mal_object->data.list); i++) {
@@ -83,6 +113,11 @@ void mal_obj_print(mal_obj_t *mal_object) {
         break;
     case MAL_ERROR:
         printf("%.*s", mal_object->data.error.len, mal_object->data.error.str);
+        break;
+    case MAL_BUILTIN:
+        printf("<builtin_function>");
+        break;
+    default:
         break;
     }
 }

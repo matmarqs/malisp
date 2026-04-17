@@ -1,4 +1,5 @@
 #include "str.h"
+#include <stdlib.h>
 
 // Hash function for strings (djb2 algorithm)
 size_t str_hash(string_t s) {
@@ -25,4 +26,12 @@ string_t str_from_cstr(char *s) {
         .len = strlen(s),
     };
     return str;
+}
+
+// calls malloc, needs to be freed after
+string_t str_copy(string_t s) {
+    char *copy = malloc(s.len + 1);
+    memcpy(copy, s.str, s.len);
+    copy[s.len] = '\0';
+    return (string_t) { .str = copy, .len = s.len };
 }

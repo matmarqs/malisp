@@ -1,10 +1,7 @@
-#include "fun_hash.h"
-#include "mal_obj.h"
+#include "builtin.h"
 
 #include <stdint.h>
-#include <stdio.h>
-
-IMPLEMENT_HASHMAP(fun_table_t, fun_table, string_t, fun_t, str_hash, str_equals);
+//#include <stdio.h>
 
 void builtin_add(mal_obj_t *x) {
     if (x->type != MAL_LIST) {
@@ -155,13 +152,4 @@ void builtin_div(mal_obj_t *x) {
     }
     mal_obj_free(x);
     *x = mal_obj_num(acc);
-}
-
-fun_table_t *create_env_functions() {
-    fun_table_t *ftab = fun_table_init(16);
-    fun_table_set(ftab, str_from_cstr("+"), builtin_add);
-    fun_table_set(ftab, str_from_cstr("-"), builtin_sub);
-    fun_table_set(ftab, str_from_cstr("*"), builtin_mul);
-    fun_table_set(ftab, str_from_cstr("/"), builtin_div);
-    return ftab;
 }
