@@ -4,12 +4,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+typedef enum { HM_STATE_FREE, HM_STATE_OCCUPIED, HM_STATE_DELETED } _hashmap_slot_state_t;
+
 #define DEFINE_HASHMAP(name, prefix, key_type, val_type) \
-    typedef enum { FREE, OCCUPIED, DELETED } name##_SlotState;      \
     typedef struct {                                                \
         key_type key;                                               \
         val_type val;                                               \
-        name##_SlotState state;                                     \
+        _hashmap_slot_state_t state;                                \
     } name##_Slot;                                                  \
     typedef struct {                                                \
         name##_Slot *slots;                                         \
@@ -41,7 +42,7 @@
         map->threshold = (int)(new_capacity * 0.7);                     \
         map->size = 0;                                                  \
         for (int i = 0; i < old_capacity; i++) {                        \
-            if (old_slots[i].state == OCCUPIED) {                       \
+            if (old_slots[i].state == HM_STATE_OCCUPIED) {              \
                 prefix##_set(map, old_slots[i].key, old_slots[i].val);  \
             }                                                           \
         }                                                               \
@@ -71,8 +72,8 @@
         int idx = (int)(hash_val & (map->capacity - 1));                \
         for (int i = 0; i < map->capacity; i++) {                       \
             int j = (idx + i) & (map->capacity - 1);                    \
-            if (map->slots[j].state == FREE) break;                     \
-            if (map->slots[j].state == OCCUPIED &&                      \
+            if (map->slots[j].state == HM_STATE_FREE) break;            \
+            if (map->slots[j].state == HM_STATE_OCCUPIED &&             \
                 key_equals(map->slots[j].key, key)) {                   \
                 if (out) *out = map->slots[j].val;                      \
                 return true;                                            \
@@ -89,21 +90,21 @@
         int first_deleted = -1;                                         \
         for (int i = 0; i < map->capacity; i++) {                       \
             int j = (idx + i) & (map->capacity - 1);                    \
-            if (map->slots[j].state == OCCUPIED) {                      \
+            if (map->slots[j].state == HM_STATE_OCCUPIED) {             \
                 if (key_equals(map->slots[j].key, key)) {               \
                     map->slots[j].val = val;                            \
                     return;                                             \
                 }                                                       \
-            } else if (map->slots[j].state == FREE) {                   \
+            } else if (map->slots[j].state == HM_STATE_FREE) {          \
                 if (first_deleted == -1) {                              \
                     map->slots[j].key = key;                            \
                     map->slots[j].val = val;                            \
-                    map->slots[j].state = OCCUPIED;                     \
+                    map->slots[j].state = HM_STATE_OCCUPIED;            \
                     map->size++;                                        \
                 } else {                                                \
                     map->slots[first_deleted].key = key;                \
                     map->slots[first_deleted].val = val;                \
-                    map->slots[first_deleted].state = OCCUPIED;         \
+                    map->slots[first_deleted].state = HM_STATE_OCCUPIED; \
                     map->size++;                                        \
                 }                                                       \
                 return;                                                 \
@@ -114,7 +115,7 @@
         if (first_deleted != -1) {                                      \
             map->slots[first_deleted].key = key;                        \
             map->slots[first_deleted].val = val;                        \
-            map->slots[first_deleted].state = OCCUPIED;                 \
+            map->slots[first_deleted].state = HM_STATE_OCCUPIED;        \
             map->size++;                                                \
         }                                                               \
     }                                                                   \
@@ -123,10 +124,10 @@
         int idx = (int)(hash_val & (map->capacity - 1));                \
         for (int i = 0; i < map->capacity; i++) {                       \
             int j = (idx + i) & (map->capacity - 1);                    \
-            if (map->slots[j].state == FREE) return;                    \
-            if (map->slots[j].state == OCCUPIED &&                      \
+            if (map->slots[j].state == HM_STATE_FREE) return;           \
+            if (map->slots[j].state == HM_STATE_OCCUPIED &&             \
                 key_equals(map->slots[j].key, key)) {                   \
-                map->slots[j].state = DELETED;                          \
+                map->slots[j].state = HM_STATE_DELETED;                 \
                 map->size--;                                            \
                 return;                                                 \
             }                                                           \

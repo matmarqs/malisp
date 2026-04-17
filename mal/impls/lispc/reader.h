@@ -20,6 +20,8 @@ typedef struct {
     pcre2_match_data *match_data;
 } mal_reader_t;
 
-mal_obj_t read_str(char *str);
+mal_obj_t read_str(mal_reader_t *reader, char *str);
+void mal_reader_regex_init(mal_reader_t *reader);
+void mal_reader_regex_free(mal_reader_t *reader);
 
 #endif // _READER_H

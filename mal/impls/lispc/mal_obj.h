@@ -35,7 +35,6 @@ struct mal_obj_t {
 DEFINE_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
 mal_obj_t mal_obj_symbol(char *token, int token_sz);
-mal_obj_t mal_obj_symbol_persistent(string_t str_to_copy);
 mal_obj_t mal_obj_num(int64_t num);
 mal_obj_t mal_obj_list(void);
 mal_obj_t mal_obj_error(char *error_cstr);

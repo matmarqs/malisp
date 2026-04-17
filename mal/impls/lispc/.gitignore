@@ -1,4 +1,2 @@
 step*_*
 !step*_*.c
-Makefile
-.gitignore

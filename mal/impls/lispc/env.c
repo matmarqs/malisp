@@ -1,5 +1,6 @@
 #include "env.h"
 #include "builtin.h"
+#include "hashmap.h"
 #include "mal_obj.h"
 #include "str.h"
 
@@ -15,12 +16,22 @@ mal_env_t *mal_env_create(mal_env_t *outer) {
 }
 
 void mal_env_free(mal_env_t *env) {
-    env_table_free(env->data);
+    env_table_t *table = env->data;
+    // free the copied string keys
+    for (int i = 0; i < table->capacity; i++) {
+        if (table->slots[i].state == HM_STATE_OCCUPIED) {
+            free(table->slots[i].key.str);
+        }
+    }
+    env_table_free(table);
     free(env);
 }
 
 void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t mal_val) {
-    env_table_set(env->data, str_key, mal_val);
+    // every string key is actually copied (malloc'ed) because the char * pointers
+    // come from the input buffer read by readline, and they are freed after each mal_eval()
+    // so we need to copy the strings here in other for them to persist in the environment
+    env_table_set(env->data, str_copy(str_key), mal_val);
 }
 
 bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t *mal_val) {

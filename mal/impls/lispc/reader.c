@@ -3,11 +3,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
 
-static void mal_reader_init(mal_reader_t *reader, char *buffer) {
-    reader->buffer = str_from_cstr(buffer);
-    reader->token = (mal_reader_token_t) { .pos = NULL, .size = 0, .offset = 0};
+void mal_reader_regex_init(mal_reader_t *reader) {
     /* Regex: [\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*) */
     /* [\s,]*: ignores all whitespaces or commas */
     /* ~@: captures the 2 special characters ~@ */
@@ -34,7 +31,12 @@ static void mal_reader_init(mal_reader_t *reader, char *buffer) {
     reader->match_data = pcre2_match_data_create_from_pattern(reader->re, NULL);
 }
 
-static void mal_reader_free(mal_reader_t *reader) {
+static void mal_reader_buffer_init(mal_reader_t *reader, char *buffer) {
+    reader->buffer = str_from_cstr(buffer);
+    reader->token = (mal_reader_token_t) { .pos = NULL, .size = 0, .offset = 0};
+}
+
+void mal_reader_regex_free(mal_reader_t *reader) {
     pcre2_match_data_free(reader->match_data);
     pcre2_code_free(reader->re);
 }
@@ -120,7 +122,6 @@ static mal_obj_t read_list(mal_reader_t *reader) {
             break;
         }
         char *token = (char *)reader->token.pos;
-        //int token_size = reader->token.size;
         if (strncmp(token, ")", 1) == 0) {
             break;
         }
@@ -136,7 +137,6 @@ static mal_obj_t read_form(mal_reader_t *reader) {
     if (!token) {
         return mal_obj_symbol("", 0);
     }
-    //int token_size = reader->token.size;
     if (strncmp(token, "(", 1) == 0) {
         return read_list(reader);
     }
@@ -145,14 +145,8 @@ static mal_obj_t read_form(mal_reader_t *reader) {
     }
 }
 
-mal_obj_t read_str(char *str) {
-    mal_reader_t reader;
-    mal_reader_init(&reader, str);
-    mal_reader_next(&reader);
-    /* if (mal_reader_next(&reader) == -1) { */
-    /*     return mal_obj_symbol("", 0); // return empty symbol */
-    /* } */
-    mal_obj_t root = read_form(&reader);
-    mal_reader_free(&reader);
-    return root;
+mal_obj_t read_str(mal_reader_t *reader, char *str) {
+    mal_reader_buffer_init(reader, str);
+    mal_reader_next(reader);
+    return read_form(reader);
 }
