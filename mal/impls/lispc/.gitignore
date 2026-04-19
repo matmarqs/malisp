@@ -1,2 +1,5 @@
 step*_*
 !step*_*.c
+**/*.srctrlbm
+**/*.srctrldb
+**/*.srctrlprj
