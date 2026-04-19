@@ -1,4 +1,4 @@
-(+ 2 2)
+jjjjjjjjjjjjjj(+ 2 2)
 (- 100)
 (+ 1 2)
 (+ 5 (* 2 3))
@@ -41,3 +41,6 @@ x
 (let* (q 9) a)
 (let* (z 2) (let* (q 9) a))
 (let* (x 2 x 3) x)
+(let* (c a) c)
+(let* (c 123) (abc))
+(let* (c 123) (+ abc 123))
