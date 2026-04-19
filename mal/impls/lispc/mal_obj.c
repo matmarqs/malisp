@@ -6,7 +6,6 @@ IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 mal_obj_t mal_obj_symbol(char *token, int token_sz) {
     mal_obj_t x = {
         .type = MAL_SYMBOL,
-        .persistent = false,
         .data = {
             .symbol = {
                 .str = token,
@@ -20,7 +19,6 @@ mal_obj_t mal_obj_symbol(char *token, int token_sz) {
 mal_obj_t mal_obj_num(int64_t num) {
     mal_obj_t x = {
         .type = MAL_NUMBER,
-        .persistent = false,
         .data = {
             .number = num,
         },
@@ -28,24 +26,29 @@ mal_obj_t mal_obj_num(int64_t num) {
     return x;
 }
 
-mal_obj_t mal_obj_error(char *error_cstr) {
-    mal_obj_t x = {
+mal_obj_t mal_obj_error_format(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    // Determine size
+    int size = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+    // Allocate and format
+    char *error_str = malloc(size + 1);
+    va_start(args, fmt);
+    vsnprintf(error_str, size + 1, fmt, args);
+    va_end(args);
+    return (mal_obj_t){
         .type = MAL_ERROR,
-        .persistent = false,
-        .data = {
-            .error = {
-                .str = error_cstr,
-                .len = strlen(error_cstr),
-            },
-        },
+        .data.error = {
+            .str = error_str,
+            .len = size
+        }
     };
-    return x;
 }
 
 mal_obj_t mal_obj_list(void) {
     mal_obj_t x = {
         .type = MAL_LIST,
-        .persistent = true,
         .data = {
             .list = mal_list_create(4), // alloc list in the heap
         },
@@ -56,7 +59,6 @@ mal_obj_t mal_obj_list(void) {
 mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
     mal_obj_t x = {
         .type = MAL_BUILTIN,
-        .persistent = false,
         .data = {
             .builtin_fn = fn_ptr,
         },
@@ -64,28 +66,13 @@ mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
     return x;
 }
 
-void mal_obj_free_list(mal_obj_t *x) {
-    if (!x->persistent)
-        return;
+void mal_obj_free(mal_obj_t *x) {
     switch (x->type) {
     case MAL_LIST:
         for (int i = 0; i < mal_list_len(x->data.list); i++) {
-            mal_obj_free_list(mal_list_get(x->data.list, i));
+            mal_obj_free(mal_list_get(x->data.list, i));
         }
         mal_list_free(x->data.list);
-        break;
-    default:
-        break;
-    }
-    x->persistent = false;
-}
-
-void mal_obj_free_everything(mal_obj_t *x) {
-    if (!x->persistent)
-        return;
-    switch (x->type) {
-    case MAL_LIST:
-        mal_obj_free_list(x);
         break;
     case MAL_ERROR:
         free(x->data.error.str);
@@ -93,7 +80,6 @@ void mal_obj_free_everything(mal_obj_t *x) {
     default:
         break;
     }
-    x->persistent = false;
 }
 
 void mal_obj_print(mal_obj_t *mal_object) {
@@ -118,9 +104,35 @@ void mal_obj_print(mal_obj_t *mal_object) {
         printf("%.*s", mal_object->data.error.len, mal_object->data.error.str);
         break;
     case MAL_BUILTIN:
-        printf("<builtin_function>");
+        printf("<builtin>");
         break;
     default:
         break;
     }
+}
+
+char *mal_obj_sprint(mal_obj_t *mal_object) {
+    static char _buffer[1024];
+    switch (mal_object->type) {
+    case MAL_SYMBOL:
+        snprintf(_buffer, sizeof(_buffer), "%.*s",
+                 mal_object->data.symbol.len, mal_object->data.symbol.str);
+        break;
+    case MAL_NUMBER:
+        snprintf(_buffer, sizeof(_buffer), "%lld", (long long)mal_object->data.number);
+        break;
+    case MAL_LIST:
+        snprintf(_buffer, sizeof(_buffer), "<list>");
+        break;
+    case MAL_ERROR:
+        snprintf(_buffer, sizeof(_buffer), "%.*s",
+                 mal_object->data.error.len, mal_object->data.error.str);
+        break;
+    case MAL_BUILTIN:
+        snprintf(_buffer, sizeof(_buffer), "<builtin>");
+        break;
+    default:
+        break;
+    }
+    return _buffer;
 }
