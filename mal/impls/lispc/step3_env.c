@@ -47,10 +47,11 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
                 string_t key = mal_list_get(list, 1)->data.symbol;
                 mal_obj_t *value = mal_list_get(list, 2);
                 mal_eval(value, env);
+                mal_obj_t result = *value; // need to get before free
                 MAL_ASSERT(node, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
-                mal_env_set(env, key, *value);
+                mal_env_set(env, key, result);
                 mal_obj_free(node);
-                *node = *value;
+                *node = result;
                 return;
             }
             // let*
@@ -77,7 +78,7 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
                 }
                 mal_obj_t *result = mal_list_get(list, 2);
                 mal_eval(result, new_env);
-                mal_obj_t result_obj = *result;
+                mal_obj_t result_obj = *result; // need to get before free
                 mal_obj_free(node);
                 *node = result_obj;
                 mal_env_free(new_env);
