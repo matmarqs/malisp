@@ -38,7 +38,8 @@ mal_obj_t mal_obj_symbol(char *token, int token_sz);
 mal_obj_t mal_obj_num(int64_t num);
 mal_obj_t mal_obj_list(void);
 mal_obj_t mal_obj_error(char *error_cstr);
-void mal_obj_free(mal_obj_t *mal_object);
+void mal_obj_free_list(mal_obj_t *mal_object);
+void mal_obj_free_everything(mal_obj_t *mal_object);
 void mal_obj_print(mal_obj_t *mal_object);
 mal_obj_t mal_obj_builtin(fun_t fn_ptr);
 
@@ -51,5 +52,6 @@ mal_obj_t mal_obj_builtin(fun_t fn_ptr);
 #define ERROR_STR_DIVISION_BY_ZERO "Error: Encountered division by zero"
 #define ERROR_STR_NOT_FOUND_IN_ENV "Error: Symbol not found in environment"
 #define ERROR_STR_WRONG_NUM_OF_ARGS "Error: Number wrong of arguments"
+#define ERROR_STR_CANT_EVAL_LET_ENV "Error: Cannot evaluate let* environment"
 
 #endif // _MAL_H
