@@ -1,4 +1,5 @@
 #include "mal_obj.h"
+#include <stdint.h>
 IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
 #include <stdio.h>
@@ -56,11 +57,61 @@ mal_obj_t mal_obj_list(void) {
     return x;
 }
 
-mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
+mal_obj_t mal_obj_builtin_fn(fun_t fn_ptr) {
     mal_obj_t x = {
         .type = MAL_BUILTIN,
         .data = {
-            .builtin_fn = fn_ptr,
+            .builtin = {
+                .type = MAL_BUILTIN_FN,
+                .data = {
+                    .builtin_fn = fn_ptr,
+                },
+            },
+        },
+    };
+    return x;
+}
+
+mal_obj_t mal_obj_builtin_bool(bool boolean) {
+    mal_obj_t x = {
+        .type = MAL_BUILTIN,
+        .data = {
+            .builtin = {
+                .type = MAL_BUILTIN_BOOL,
+                .data = {
+                    .builtin_bool = boolean,
+                },
+            },
+        },
+    };
+    return x;
+}
+
+mal_obj_t mal_obj_builtin_nil() {
+    mal_obj_t x = {
+        .type = MAL_BUILTIN,
+        .data = {
+            .builtin = {
+                .type = MAL_BUILTIN_NIL,
+                .data = {
+                    .builtin_nil = false,
+                },
+            },
+        },
+    };
+    return x;
+}
+
+mal_obj_t mal_obj_builtin_num(int64_t num) {
+    mal_obj_t x = {
+        .type = MAL_BUILTIN,
+        .data = {
+            .builtin = {
+                .type = MAL_BUILTIN_NUMBER,
+                .data = {
+                    .builtin_num = num,
+                },
+            },
         },
     };
     return x;

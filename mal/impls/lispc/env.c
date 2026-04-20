@@ -50,8 +50,12 @@ bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t *mal_val) {
 }
 
 void mal_env_register_builtins(mal_env_t *env) {
-    mal_env_set(env, str_from_cstr("+"), mal_obj_builtin(builtin_add));
-    mal_env_set(env, str_from_cstr("-"), mal_obj_builtin(builtin_sub));
-    mal_env_set(env, str_from_cstr("*"), mal_obj_builtin(builtin_mul));
-    mal_env_set(env, str_from_cstr("/"), mal_obj_builtin(builtin_div));
+    mal_env_set(env, str_from_cstr("+"), mal_obj_builtin_fn(builtin_add));
+    mal_env_set(env, str_from_cstr("-"), mal_obj_builtin_fn(builtin_sub));
+    mal_env_set(env, str_from_cstr("*"), mal_obj_builtin_fn(builtin_mul));
+    mal_env_set(env, str_from_cstr("/"), mal_obj_builtin_fn(builtin_div));
+    mal_env_set(env, str_from_cstr("nil"), mal_obj_builtin_nil());
+    mal_env_set(env, str_from_cstr("true"), mal_obj_builtin_bool(true));
+    mal_env_set(env, str_from_cstr("false"), mal_obj_builtin_bool(false));
+    mal_env_set(env, str_from_cstr("pi"), mal_obj_builtin_num(3));
 }
