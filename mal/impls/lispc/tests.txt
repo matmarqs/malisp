@@ -44,3 +44,5 @@ x
 (let* (c a) c)
 (let* (c 123) (abc))
 (let* (c 123) (+ abc 123))
+(def! a bbb)
+(def! a (let* (b 4) (abc (abc))))
