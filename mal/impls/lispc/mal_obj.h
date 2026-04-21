@@ -13,6 +13,8 @@ enum {
     MAL_SYMBOL,
     MAL_ERROR,
     MAL_BUILTIN,
+    MAL_NIL,
+    MAL_BOOLEAN,
 };
 
 typedef struct mal_list_t mal_list_t;
@@ -29,6 +31,8 @@ struct mal_obj_t {
         string_t symbol;
         string_t error;
         fun_t builtin_fn;
+        bool boolean;
+        bool nil;
     } data;
 };
 
@@ -42,6 +46,8 @@ void mal_obj_free(mal_obj_t *mal_object);
 void mal_obj_print(mal_obj_t *mal_object);
 char *mal_obj_sprint(mal_obj_t *mal_object);
 mal_obj_t mal_obj_builtin(fun_t fn_ptr);
+mal_obj_t mal_obj_boolean(bool boolean);
+mal_obj_t mal_obj_nil();
 
 #define MAL_ASSERT(target, cond, err_fmt, ...)                          \
     if (!(cond)) {                                                      \

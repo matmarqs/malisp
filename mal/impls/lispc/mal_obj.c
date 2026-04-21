@@ -66,6 +66,26 @@ mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
     return x;
 }
 
+mal_obj_t mal_obj_boolean(bool boolean) {
+    mal_obj_t x = {
+        .type = MAL_BOOLEAN,
+        .data = {
+            .boolean = boolean,
+        },
+    };
+    return x;
+}
+
+mal_obj_t mal_obj_nil() {
+    mal_obj_t x = {
+        .type = MAL_NIL,
+        .data = {
+            .nil = false,
+        },
+    };
+    return x;
+}
+
 void mal_obj_free(mal_obj_t *x) {
     switch (x->type) {
     case MAL_LIST:
@@ -106,6 +126,12 @@ void mal_obj_print(mal_obj_t *mal_object) {
     case MAL_BUILTIN:
         printf("<builtin>");
         break;
+    case MAL_BOOLEAN:
+        printf(mal_object->data.boolean ? "true" : "false");
+        break;
+    case MAL_NIL:
+        printf("nil");
+        break;
     default:
         break;
     }
@@ -131,6 +157,11 @@ char *mal_obj_sprint(mal_obj_t *mal_object) {
     case MAL_BUILTIN:
         snprintf(_buffer, sizeof(_buffer), "<builtin>");
         break;
+    case MAL_BOOLEAN:
+        snprintf(_buffer, sizeof(_buffer), mal_object->data.boolean ? "true" : "false");
+        break;
+    case MAL_NIL:
+        snprintf(_buffer, sizeof(_buffer), "nil");
     default:
         break;
     }

@@ -46,3 +46,26 @@ x
 (let* (c 123) (+ abc 123))
 (def! a bbb)
 (def! a (let* (b 4) (abc (abc))))
+true
+false
+nil
+true
+false
+nil
+pi
+(+ pi false)
+(- pi true)
+(def! true 3)
+true
+(+ true true)
+
+(def! true 3)
+true
+(def! false 1)
+false
+(+ true true)
+(- true true)
+nil
+(+ nil)
+(- nil)
+(let* (nil 3) nil)

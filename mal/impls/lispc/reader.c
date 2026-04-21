@@ -106,6 +106,15 @@ static mal_obj_t read_atom(mal_reader_t *reader) {
         }
         return mal_obj_num(num);
     }
+    if (strncmp(token, "true", 4) == 0) {
+        return mal_obj_boolean(true);
+    }
+    else if (strncmp(token, "false", 5) == 0) {
+        return mal_obj_boolean(false);
+    }
+    else if (strncmp(token, "nil", 3) == 0) {
+        return mal_obj_nil();
+    }
     // match symbols
     return mal_obj_symbol(token, token_size);
 }
