@@ -86,6 +86,20 @@ mal_obj_t mal_obj_nil() {
     return x;
 }
 
+mal_obj_t mal_obj_function(mal_env_t *env, mal_obj_t *params, mal_obj_t *body) {
+    mal_closure_t *f = malloc(sizeof(mal_closure_t));
+    f->env = env;
+    f->params = params;
+    f->body = body;
+    mal_obj_t x = {
+        .type = MAL_FUNCTION,
+        .data = {
+            .function = f,
+        },
+    };
+    return x;
+}
+
 void mal_obj_free(mal_obj_t *x) {
     switch (x->type) {
     case MAL_LIST:
@@ -96,6 +110,12 @@ void mal_obj_free(mal_obj_t *x) {
         break;
     case MAL_ERROR:
         free(x->data.error.str);
+        break;
+    case MAL_FUNCTION:
+        //mal_env_free(x->data.function->env);
+        //mal_obj_free(x->data.function->params);
+        //mal_obj_free(x->data.function->body);
+        free(x->data.function);
         break;
     default:
         break;

@@ -6,7 +6,7 @@
 
 typedef enum { HM_STATE_FREE, HM_STATE_OCCUPIED, HM_STATE_DELETED } _hashmap_slot_state_t;
 
-#define DEFINE_HASHMAP(name, prefix, key_type, val_type) \
+#define DEFINE_HASHMAP(name, prefix, key_type, val_type)            \
     typedef struct {                                                \
         key_type key;                                               \
         val_type val;                                               \

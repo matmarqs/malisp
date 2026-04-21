@@ -20,7 +20,7 @@ void mal_print(mal_obj_t *root) {
     putchar('\n');
 }
 
-void mal_eval(mal_obj_t *node, mal_env_t *env) {
+bool mal_eval(mal_obj_t *node, mal_env_t *env) {
     mal_obj_t temp_obj;
     mal_obj_t first;
     mal_list_t *list;
@@ -31,7 +31,7 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
         MAL_ASSERT(node, temp_obj.type != MAL_ERROR, "%s", mal_obj_sprint(&temp_obj));
         mal_obj_free(node);  // there is a problem here, if temp_obj is an error
         *node = temp_obj;    // because we only do a shallow copy
-        return;
+        return true;
         break;
     case MAL_LIST:
         list = node->data.list;
@@ -53,7 +53,7 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
                 mal_env_set(env, key, result);
                 mal_obj_free(node);
                 *node = result;
-                return;
+                return true;
             }
             // let*
             if (strncmp(first.data.symbol.str, "let*", 4) == 0) {
@@ -69,24 +69,24 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
                     mal_obj_t *symbol = mal_list_get(bindings, i);
                     mal_obj_t *value = mal_list_get(bindings, i+1);
                     mal_obj_t temp;
-                    MAL_ENV_ASSERT(node, new_env, symbol->type == MAL_SYMBOL &&
+                    MAL_ASSERT_FREE_ENV(node, new_env, symbol->type == MAL_SYMBOL &&
                                (!mal_env_get(env, symbol->data.symbol, &temp) ||
                                 temp.type != MAL_BUILTIN),
                                "Error: Invalid symbol '%s' found in let* expression",
                                mal_obj_sprint(symbol));
                     mal_eval(value, new_env);
-                    MAL_ENV_ASSERT(node, new_env, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
+                    MAL_ASSERT_FREE_ENV(node, new_env, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
                     mal_env_set(new_env, symbol->data.symbol, *value);
                 }
                 mal_obj_t *result = mal_list_get(list, 2);
                 mal_eval(result, new_env);
                 // if result is an error, freeing node will free the MAL_ERROR twice
-                MAL_ENV_ASSERT(node, new_env, result->type != MAL_ERROR, "%s", mal_obj_sprint(result));
+                MAL_ASSERT_FREE_ENV(node, new_env, result->type != MAL_ERROR, "%s", mal_obj_sprint(result));
                 mal_obj_t result_obj = *result; // need to get before free
                 mal_obj_free(node);
                 *node = result_obj;
                 mal_env_free(new_env);
-                return;
+                return true;
             }
             // BELOW is for standard functions
             // first, eval all elements of the list
@@ -101,12 +101,13 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
             // pop the symbol, and let it act on the rest of the list
             mal_list_pop_front(list, NULL);
             func_symbol.data.builtin_fn(node);
-            return;
+            return true;
         }
         break;
     default:
         break;
     }
+    return true;
 }
 
 bool mal_rep(mal_reader_t *reader, mal_env_t *env) {

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-void builtin_add(mal_obj_t *x) {
+bool builtin_add(mal_obj_t *x) {
     MAL_ASSERT(x, x->type == MAL_LIST, "Error: Tried to eval a non-list object");
     mal_list_t *list = x->data.list;
     MAL_ASSERT(x, !mal_list_is_empty(list), "Error: Tried to eval empty list");
@@ -15,9 +15,10 @@ void builtin_add(mal_obj_t *x) {
     }
     mal_obj_free(x);
     *x = mal_obj_num(acc);
+    return true;
 }
 
-void builtin_sub(mal_obj_t *x) {
+bool builtin_sub(mal_obj_t *x) {
     MAL_ASSERT(x, x->type == MAL_LIST, "Error: Tried to eval a non-list object");
     MAL_ASSERT(x, !mal_list_is_empty(x->data.list), "Error: Tried to eval empty list");
     mal_list_t *list = x->data.list;
@@ -33,9 +34,10 @@ void builtin_sub(mal_obj_t *x) {
     }
     mal_obj_free(x);
     *x = mal_obj_num(acc);
+    return true;
 }
 
-void builtin_mul(mal_obj_t *x) {
+bool builtin_mul(mal_obj_t *x) {
     MAL_ASSERT(x, x->type == MAL_LIST, "Error: Tried to eval a non-list object");
     mal_list_t *list = x->data.list;
     MAL_ASSERT(x, !mal_list_is_empty(list), "Error: Tried to eval empty list");
@@ -47,9 +49,10 @@ void builtin_mul(mal_obj_t *x) {
     }
     mal_obj_free(x);
     *x = mal_obj_num(acc);
+    return true;
 }
 
-void builtin_div(mal_obj_t *x) {
+bool builtin_div(mal_obj_t *x) {
     MAL_ASSERT(x, x->type == MAL_LIST, "Error: Tried to eval a non-list object");
     mal_list_t *list = x->data.list;
     MAL_ASSERT(x, mal_list_len(list) >= 2, "Error: Division expects at least two arguments. "
@@ -66,4 +69,5 @@ void builtin_div(mal_obj_t *x) {
     }
     mal_obj_free(x);
     *x = mal_obj_num(acc);
+    return true;
 }

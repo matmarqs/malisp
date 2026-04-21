@@ -1,40 +1,10 @@
 #ifndef _MAL_H
 #define _MAL_H
 
+#include "types.h"
 #include "deque.h"
-#include "str.h"
 
-#include <stdint.h>
 #include <stdarg.h>
-
-enum {
-    MAL_LIST,
-    MAL_NUMBER,
-    MAL_SYMBOL,
-    MAL_ERROR,
-    MAL_BUILTIN,
-    MAL_NIL,
-    MAL_BOOLEAN,
-};
-
-typedef struct mal_list_t mal_list_t;
-
-typedef struct mal_obj_t mal_obj_t;
-
-typedef void (*fun_t)(mal_obj_t *); // function return void: modify the (mal_obj_t *) in place
-
-struct mal_obj_t {
-    uint8_t type;
-    union {
-        mal_list_t *list;
-        int64_t number;
-        string_t symbol;
-        string_t error;
-        fun_t builtin_fn;
-        bool boolean;
-        bool nil;
-    } data;
-};
 
 DEFINE_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
@@ -52,9 +22,11 @@ mal_obj_t mal_obj_nil();
 #define MAL_ASSERT(target, cond, err_fmt, ...)                          \
     if (!(cond)) {                                                      \
         mal_obj_t _err = mal_obj_error_format(err_fmt, ##__VA_ARGS__);  \
-        mal_obj_free(target);                                           \
-        *(target) = _err;                                               \
-        return;                                                         \
+        if (target) {                                                   \
+            mal_obj_free(target);                                       \
+            *(target) = _err;                                           \
+        }                                                               \
+        return false;                                                   \
     }
 
 #endif // _MAL_H

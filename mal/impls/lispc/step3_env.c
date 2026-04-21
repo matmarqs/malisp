@@ -69,19 +69,19 @@ void mal_eval(mal_obj_t *node, mal_env_t *env) {
                     mal_obj_t *symbol = mal_list_get(bindings, i);
                     mal_obj_t *value = mal_list_get(bindings, i+1);
                     mal_obj_t temp;
-                    MAL_ENV_ASSERT(node, new_env, symbol->type == MAL_SYMBOL &&
+                    MAL_ASSERT_FREE_ENV(node, new_env, symbol->type == MAL_SYMBOL &&
                                (!mal_env_get(env, symbol->data.symbol, &temp) ||
                                 temp.type != MAL_BUILTIN),
                                "Error: Invalid symbol '%s' found in let* expression",
                                mal_obj_sprint(symbol));
                     mal_eval(value, new_env);
-                    MAL_ENV_ASSERT(node, new_env, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
+                    MAL_ASSERT_FREE_ENV(node, new_env, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
                     mal_env_set(new_env, symbol->data.symbol, *value);
                 }
                 mal_obj_t *result = mal_list_get(list, 2);
                 mal_eval(result, new_env);
                 // if result is an error, freeing node will free the MAL_ERROR twice
-                MAL_ENV_ASSERT(node, new_env, result->type != MAL_ERROR, "%s", mal_obj_sprint(result));
+                MAL_ASSERT_FREE_ENV(node, new_env, result->type != MAL_ERROR, "%s", mal_obj_sprint(result));
                 mal_obj_t result_obj = *result; // need to get before free
                 mal_obj_free(node);
                 *node = result_obj;
