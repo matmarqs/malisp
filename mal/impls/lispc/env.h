@@ -5,6 +5,7 @@
 
 // this is actually a single linked-list (outer environments)
 mal_env_t *mal_env_create(mal_env_t *outer);
+bool mal_env_bind(mal_env_t *env, mal_obj_t *binds, mal_obj_t *exprs, mal_obj_t *err_feedback);
 void mal_env_free(mal_env_t *env);
 void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t mal_val);
 bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t *mal_val);

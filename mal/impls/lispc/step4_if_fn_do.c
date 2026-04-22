@@ -88,6 +88,13 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
                 mal_env_free(new_env);
                 return true;
             }
+            // fn*
+            if (strncmp(first.data.symbol.str, "fn*", 3) == 0) {
+                MAL_ASSERT(node, mal_list_len(list) == 3, "Error: fn* expects 2 arguments. "
+                           "Got %d", mal_list_len(list));
+                mal_env_t *new_env = mal_env_create(env);
+                mal_env_bind(new_env,
+            }
             // BELOW is for standard functions
             // first, eval all elements of the list
             for (int i = 0; i < mal_list_len(list); i++) {
