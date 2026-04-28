@@ -84,3 +84,5 @@ nil
 ( (fn* (a) a) 7)
 ( (fn* (a) (+ a 1)) 10)
 ( (fn* (a b) (+ a b)) 2 3)
+(def! sum1 (fn* (a) (+ a 1)))
+(sum1 4)
