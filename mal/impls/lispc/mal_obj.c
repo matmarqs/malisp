@@ -1,6 +1,7 @@
 #include "mal_obj.h"
 IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
+#include "env.h"
 #include <stdio.h>
 
 mal_obj_t mal_obj_symbol(char *token, int token_sz) {
@@ -112,6 +113,7 @@ void mal_obj_free(mal_obj_t *x) {
         free(x->data.error.str);
         break;
     case MAL_FUNCTION:
+        /* FIXME: this will give a memory leak */
         //mal_env_free(x->data.function->env);
         //mal_obj_free(x->data.function->params);
         //mal_obj_free(x->data.function->body);
@@ -146,6 +148,9 @@ void mal_obj_print(mal_obj_t *mal_object) {
     case MAL_BUILTIN:
         printf("<builtin>");
         break;
+    case MAL_FUNCTION:
+        printf("#<function>");
+        break;
     case MAL_BOOLEAN:
         printf(mal_object->data.boolean ? "true" : "false");
         break;
@@ -176,6 +181,9 @@ char *mal_obj_sprint(mal_obj_t *mal_object) {
         break;
     case MAL_BUILTIN:
         snprintf(_buffer, sizeof(_buffer), "<builtin>");
+        break;
+    case MAL_FUNCTION:
+        snprintf(_buffer, sizeof(_buffer), "#<function>");
         break;
     case MAL_BOOLEAN:
         snprintf(_buffer, sizeof(_buffer), mal_object->data.boolean ? "true" : "false");

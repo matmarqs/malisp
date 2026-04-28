@@ -101,8 +101,10 @@
         return false;                                                   \
     }                                                                   \
     void prefix##_free(name *deque) {                                   \
-        free(deque->items);                                             \
-        free(deque);                                                    \
+        if (deque) {                                                    \
+            free(deque->items);                                         \
+            free(deque);                                                \
+        }                                                               \
     }                                                                   \
     int prefix##_len(name *deque) {                                     \
         return deque->count;                                            \

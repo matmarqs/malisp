@@ -1,6 +1,7 @@
 #include "mal_obj.h"
 #include "reader.h"
 #include "env.h"
+#include "types.h"
 
 #include <stdio.h>
 #include <editline.h>
@@ -38,9 +39,9 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
         if (!mal_list_is_empty(list)) {
             // HERE is for special symbols, such as 'def!', 'let*', etc.
             mal_list_peek_front(list, &first);
-            MAL_ASSERT(node, first.type == MAL_SYMBOL,
-                       "Error: First argument '%s' of an expression is not a symbol",
-                       mal_obj_sprint(&first));
+            if (first.type != MAL_SYMBOL) {
+                goto standard_apply;
+            }
             // def!
             if (strncmp(first.data.symbol.str, "def!", 4) == 0) {
                 MAL_ASSERT(node, mal_list_len(list) == 3,
@@ -51,6 +52,7 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
                 mal_obj_t result = *value; // need to get before free
                 MAL_ASSERT(node, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
                 mal_env_set(env, key, result);
+                mal_list_pop_back(list, NULL); /* this handles the case where value == MAL_FUNCTION, so it would not double free */
                 mal_obj_free(node);
                 *node = result;
                 return true;
@@ -93,8 +95,17 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
                 MAL_ASSERT(node, mal_list_len(list) == 3, "Error: fn* expects 2 arguments. "
                            "Got %d", mal_list_len(list));
                 mal_env_t *new_env = mal_env_create(env);
-                mal_env_bind(new_env,
+                mal_obj_t *binds = mal_list_get(list, 1);
+                mal_obj_t *body = mal_list_get(list, 2);
+                mal_obj_t closure = mal_obj_function(new_env, binds, body);
+                /* here we do not free the node directly, because it would free the function
+                   parameters and the body, instead we just free its internal list */
+                mal_list_free(node->data.list);
+                node->data.list = NULL;
+                *node = closure; /* evaluates to a MAL_FUNCTION */
+                return true;
             }
+        standard_apply:
             // BELOW is for standard functions
             // first, eval all elements of the list
             for (int i = 0; i < mal_list_len(list); i++) {
@@ -107,7 +118,22 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
                        "%s", mal_obj_sprint(&func_symbol));
             // pop the symbol, and let it act on the rest of the list
             mal_list_pop_front(list, NULL);
-            func_symbol.data.builtin_fn(node);
+            if (func_symbol.type == MAL_BUILTIN) { /* builtin function */
+                func_symbol.data.builtin_fn(node);
+            }
+            else if (func_symbol.type == MAL_FUNCTION) { /* user defined function, a.k.a. closure */
+                mal_closure_t *f = func_symbol.data.function;
+                if (!mal_env_bind(f->env, f->params, node, node)) {
+                    /* mal_env_bind frees the upper node and puts an error in it */
+                    /* we need to free the closure (that was popped from the upper node) */
+                    mal_obj_free(&func_symbol);
+                    return false;
+                }
+                mal_eval(f->body, f->env);
+                mal_obj_free(node);
+                *node = *(f->body);
+                mal_obj_free(&func_symbol);
+            }
             return true;
         }
         break;
