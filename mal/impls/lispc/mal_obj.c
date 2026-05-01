@@ -1,7 +1,7 @@
 #include "mal_obj.h"
+#include "types.h"
 IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
-#include "env.h"
 #include <stdio.h>
 
 mal_obj_t mal_obj_symbol(char *token, int token_sz) {
@@ -87,9 +87,8 @@ mal_obj_t mal_obj_nil() {
     return x;
 }
 
-mal_obj_t mal_obj_function(mal_env_t *env, mal_obj_t *params, mal_obj_t *body) {
+mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body) {
     mal_closure_t *f = malloc(sizeof(mal_closure_t));
-    f->env = env;
     f->params = params;
     f->body = body;
     mal_obj_t x = {
@@ -97,6 +96,15 @@ mal_obj_t mal_obj_function(mal_env_t *env, mal_obj_t *params, mal_obj_t *body) {
         .data = {
             .function = f,
         },
+    };
+    return x;
+}
+
+
+mal_obj_t mal_obj_empty() {
+    mal_obj_t x = {
+        .type = MAL_EMPTY,
+        .data = { 0 },
     };
     return x;
 }
@@ -113,10 +121,8 @@ void mal_obj_free(mal_obj_t *x) {
         free(x->data.error.str);
         break;
     case MAL_FUNCTION:
-        /* FIXME: this will give a memory leak */
-        //mal_env_free(x->data.function->env);
-        //mal_obj_free(x->data.function->params);
-        //mal_obj_free(x->data.function->body);
+        mal_obj_free(x->data.function->params);
+        mal_obj_free(x->data.function->body);
         free(x->data.function);
         break;
     default:

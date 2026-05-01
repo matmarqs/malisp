@@ -15,6 +15,7 @@ enum {
     MAL_NIL,
     MAL_BOOLEAN,
     MAL_FUNCTION,
+    MAL_EMPTY,                  /* this one shouldn't even be used or printed */
 };
 
 typedef struct mal_list_t mal_list_t;
@@ -26,7 +27,6 @@ typedef bool (*fun_t)(mal_obj_t *); // return bool (if success): modify the (mal
 typedef struct mal_env_t mal_env_t; // forward declaration
 
 typedef struct mal_closure_t {
-    mal_env_t *env;
     mal_obj_t *params;
     mal_obj_t *body;
 } mal_closure_t;

@@ -17,8 +17,10 @@ char *mal_read() {
 }
 
 void mal_print(mal_obj_t *root) {
-    mal_obj_print(root);
-    putchar('\n');
+    if (root->type != MAL_EMPTY) {
+        mal_obj_print(root);
+        putchar('\n');
+    }
 }
 
 bool mal_eval(mal_obj_t *node, mal_env_t *env) {
@@ -46,15 +48,23 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
             if (strncmp(first.data.symbol.str, "def!", 4) == 0) {
                 MAL_ASSERT(node, mal_list_len(list) == 3,
                            "Error: def! expects 2 arguments. Got %d", mal_list_len(list)-1);
+                // TODO: first assert that first element is a symbol
                 string_t key = mal_list_get(list, 1)->data.symbol;
                 mal_obj_t *value = mal_list_get(list, 2);
                 mal_eval(value, env);
                 mal_obj_t result = *value; // need to get before free
                 MAL_ASSERT(node, value->type != MAL_ERROR, "%s", mal_obj_sprint(value));
                 mal_env_set(env, key, result);
-                mal_list_pop_back(list, NULL); /* this handles the case where value == MAL_FUNCTION, so it would not double free */
+                /* we will not free the 2nd element, because it is set in the environment */
+                mal_list_pop_back(list, NULL);
                 mal_obj_free(node);
-                *node = result;
+                if (result.type == MAL_FUNCTION) {
+                    /* this handles the case where value == MAL_FUNCTION, so it would not double free */
+                    *node = mal_obj_empty();
+                }
+                else {
+                    *node = result;
+                }
                 return true;
             }
             // let*
@@ -94,10 +104,9 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
             if (strncmp(first.data.symbol.str, "fn*", 3) == 0) {
                 MAL_ASSERT(node, mal_list_len(list) == 3, "Error: fn* expects 2 arguments. "
                            "Got %d", mal_list_len(list));
-                mal_env_t *new_env = mal_env_create(env);
                 mal_obj_t *binds = mal_list_get(list, 1);
                 mal_obj_t *body = mal_list_get(list, 2);
-                mal_obj_t closure = mal_obj_function(new_env, binds, body);
+                mal_obj_t closure = mal_obj_function(binds, body);
                 /* here we do not free the node directly, because it would free the function
                    parameters and the body, instead we just free its internal list */
                 mal_list_free(node->data.list);
@@ -122,17 +131,20 @@ bool mal_eval(mal_obj_t *node, mal_env_t *env) {
                 func_symbol.data.builtin_fn(node);
             }
             else if (func_symbol.type == MAL_FUNCTION) { /* user defined function, a.k.a. closure */
+                /* FIXME: THERE IS A BIG PROBLEM HERE IF THE MAL_FUNCTION IS IN "def!" */
                 mal_closure_t *f = func_symbol.data.function;
-                if (!mal_env_bind(f->env, f->params, node, node)) {
+                mal_env_t *call_env = mal_env_create(env);
+                if (!mal_env_bind(call_env, f->params, node, node)) {
                     /* mal_env_bind frees the upper node and puts an error in it */
                     /* we need to free the closure (that was popped from the upper node) */
-                    mal_obj_free(&func_symbol);
+                    mal_obj_free(&func_symbol); /* should not free if the MAL_FUNCTION comes from def!, we want to reuse it */
                     return false;
                 }
-                mal_eval(f->body, f->env);
+                mal_eval(f->body, call_env); /* this is problematic, because we actually lose the function body (because the evaluation is in-place) */
                 mal_obj_free(node);
                 *node = *(f->body);
-                mal_obj_free(&func_symbol);
+                mal_env_free(call_env);
+                mal_obj_free(&func_symbol); /* we actually don't want to do that if the MAL_FUNCTION comes from "def!" */
             }
             return true;
         }
@@ -168,7 +180,7 @@ int main() {
         running = mal_rep(&reader, env);
     }
 
-    mal_env_free(env);
+    mal_env_free(env);          /* this cleans MAL_FUNCTION's */
     mal_reader_regex_free(&reader);
     return 0;
 }
