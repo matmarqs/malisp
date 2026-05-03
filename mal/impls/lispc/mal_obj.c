@@ -30,14 +30,17 @@ mal_obj_t mal_obj_num(int64_t num) {
 mal_obj_t mal_obj_error_format(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
+
     // Determine size
     int size = vsnprintf(NULL, 0, fmt, args);
     va_end(args);
+
     // Allocate and format
     char *error_str = malloc(size + 1);
     va_start(args, fmt);
     vsnprintf(error_str, size + 1, fmt, args);
     va_end(args);
+
     return (mal_obj_t){
         .type = MAL_ERROR,
         .data.error = {
@@ -47,11 +50,11 @@ mal_obj_t mal_obj_error_format(const char *fmt, ...) {
     };
 }
 
-mal_obj_t mal_obj_list(void) {
+mal_obj_t mal_obj_list(int list_size) {
     mal_obj_t x = {
         .type = MAL_LIST,
         .data = {
-            .list = mal_list_create(4), // alloc list in the heap
+            .list = mal_list_create(list_size), // alloc list in the heap
         },
     };
     return x;
@@ -88,13 +91,13 @@ mal_obj_t mal_obj_nil() {
 }
 
 mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body) {
-    mal_closure_t *f = malloc(sizeof(mal_closure_t));
-    f->params = params;
-    f->body = body;
     mal_obj_t x = {
         .type = MAL_FUNCTION,
         .data = {
-            .function = f,
+            .function = {
+                .params = params,
+                .body = body,
+            },
         },
     };
     return x;
@@ -121,9 +124,8 @@ void mal_obj_free(mal_obj_t *x) {
         free(x->data.error.str);
         break;
     case MAL_FUNCTION:
-        mal_obj_free(x->data.function->params);
-        mal_obj_free(x->data.function->body);
-        free(x->data.function);
+        mal_obj_free(x->data.function.params);
+        mal_obj_free(x->data.function.body);
         break;
     default:
         break;

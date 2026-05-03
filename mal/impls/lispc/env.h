@@ -11,15 +11,4 @@ void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t mal_val);
 bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t *mal_val);
 void mal_env_register_builtins(mal_env_t *env);
 
-#define MAL_ASSERT_FREE_ENV(target, env, cond, err_fmt, ...)            \
-    if (!(cond)) {                                                      \
-        mal_obj_t _err = mal_obj_error_format(err_fmt, ##__VA_ARGS__);  \
-        if (target) {                                                   \
-            mal_obj_free(target);                                       \
-            *(target) = _err;                                           \
-        }                                                               \
-        mal_env_free(env);                                              \
-        return false;                                                   \
-    }
-
 #endif

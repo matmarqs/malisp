@@ -22,7 +22,7 @@ typedef struct mal_list_t mal_list_t;
 
 typedef struct mal_obj_t mal_obj_t;
 
-typedef bool (*fun_t)(mal_obj_t *); // return bool (if success): modify the (mal_obj_t *) in place
+typedef mal_obj_t (*fun_t)(mal_list_t *); // return bool (if success): modify the (mal_obj_t *) in place
 
 typedef struct mal_env_t mal_env_t; // forward declaration
 
@@ -41,7 +41,7 @@ struct mal_obj_t {
         fun_t builtin_fn;
         bool boolean;
         bool nil;
-        mal_closure_t *function;
+        mal_closure_t function;
     } data;
 };
 

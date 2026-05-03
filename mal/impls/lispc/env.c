@@ -18,14 +18,14 @@ mal_env_t *mal_env_create(mal_env_t *outer) {
 // if err != NULL, a MAL_ERROR, with the error string allocated, will be put in it
 bool mal_env_bind(mal_env_t *env, mal_obj_t *binds, mal_obj_t *exprs, mal_obj_t *err_feedback) {
     if (binds && exprs) {
-        MAL_ASSERT(err_feedback, binds->type == MAL_LIST, "Error: Tried to bind a non-list");
-        MAL_ASSERT(err_feedback, exprs->type == MAL_LIST, "Error: Binding needs a list of expressions");
+        MAL_BOOL_ASSERT(err_feedback, binds->type == MAL_LIST, "Error: Tried to bind a non-list");
+        MAL_BOOL_ASSERT(err_feedback, exprs->type == MAL_LIST, "Error: Binding needs a list of expressions");
         int binds_len = mal_list_len(binds->data.list);
         int exprs_len = mal_list_len(exprs->data.list);
-        MAL_ASSERT(err_feedback,
-                   binds_len == exprs_len,
-                   "Error: List of bindings and expressions need to have the same length. "
-                   "Expected %d. Got %d", binds_len, exprs_len);
+        MAL_BOOL_ASSERT(err_feedback,
+                        binds_len == exprs_len,
+                        "Error: List of bindings and expressions need to have the same length. "
+                        "Expected %d. Got %d", binds_len, exprs_len);
         for (int i = 0; i < binds_len; i++) {
             mal_obj_t *bind = mal_list_get(binds->data.list, i);
             mal_obj_t *expr = mal_list_get(exprs->data.list, i);
@@ -33,11 +33,11 @@ bool mal_env_bind(mal_env_t *env, mal_obj_t *binds, mal_obj_t *exprs, mal_obj_t 
             // the idea is that we can overwrite outer variables (such as global)
             // but we do not want something like (fn* (a a) (+ a a))
             mal_obj_t temp;
-            MAL_ASSERT(err_feedback, bind->type == MAL_SYMBOL &&
-                       !env_table_get(env->data, bind->data.symbol, NULL) &&
-                       (!mal_env_get(env->outer, bind->data.symbol, &temp) ||
-                        temp.type != MAL_BUILTIN), // cannot bind a BUILTIN
-                       "Error: Tried to bind invalid symbol '%s'", mal_obj_sprint(bind));
+            MAL_BOOL_ASSERT(err_feedback, bind->type == MAL_SYMBOL &&
+                            !env_table_get(env->data, bind->data.symbol, NULL) &&
+                            (!mal_env_get(env->outer, bind->data.symbol, &temp) ||
+                             temp.type != MAL_BUILTIN), // cannot bind a BUILTIN
+                            "Error: Tried to bind invalid symbol '%s'", mal_obj_sprint(bind));
             mal_env_set(env, bind->data.symbol, *expr);
         }
     }

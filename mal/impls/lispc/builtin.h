@@ -3,9 +3,9 @@
 
 #include "mal_obj.h"
 
-bool builtin_add(mal_obj_t *x);
-bool builtin_sub(mal_obj_t *x);
-bool builtin_mul(mal_obj_t *x);
-bool builtin_div(mal_obj_t *x);
+mal_obj_t builtin_add(mal_list_t *list);
+mal_obj_t builtin_sub(mal_list_t *list);
+mal_obj_t builtin_mul(mal_list_t *list);
+mal_obj_t builtin_div(mal_list_t *list);
 
 #endif // _BUILTIN_H
