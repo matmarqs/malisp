@@ -116,13 +116,14 @@ static mal_obj_t read_atom(mal_reader_t *reader) {
         return mal_obj_nil();
     }
     // match symbols
-    return mal_obj_symbol(token, token_size);
+    string_t copy = str_copy((string_t) { .str = token, .len = token_size });
+    return mal_obj_symbol(copy.str, copy.len);
 }
 
 static mal_obj_t read_form(mal_reader_t *reader);
 
 static mal_obj_t read_list(mal_reader_t *reader) {
-    mal_obj_t root = mal_obj_list();
+    mal_obj_t root = mal_obj_list(8);
     do {
         int offset = mal_reader_next(reader);
         if (offset == -1) {

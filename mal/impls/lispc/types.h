@@ -29,6 +29,7 @@ typedef struct mal_env_t mal_env_t; // forward declaration
 typedef struct mal_closure_t {
     mal_obj_t *params;
     mal_obj_t *body;
+    mal_env_t *env;
 } mal_closure_t;
 
 struct mal_obj_t {
@@ -41,7 +42,7 @@ struct mal_obj_t {
         fun_t builtin_fn;
         bool boolean;
         bool nil;
-        mal_closure_t function;
+        mal_closure_t *function;
     } data;
 };
 

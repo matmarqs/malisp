@@ -1,4 +1,5 @@
 #include "mal_obj.h"
+#include "env.h"
 #include "types.h"
 IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 
@@ -90,14 +91,15 @@ mal_obj_t mal_obj_nil() {
     return x;
 }
 
-mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body) {
+mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body, mal_env_t *env) {
+    mal_closure_t *f = malloc(sizeof(mal_closure_t));
+    f->params = params;
+    f->body = body;
+    f->env = env;
     mal_obj_t x = {
         .type = MAL_FUNCTION,
         .data = {
-            .function = {
-                .params = params,
-                .body = body,
-            },
+            .function = f,
         },
     };
     return x;
@@ -120,12 +122,18 @@ void mal_obj_free(mal_obj_t *x) {
         }
         mal_list_free(x->data.list);
         break;
+    case MAL_SYMBOL:
+        free(x->data.symbol.str);
+        break;
     case MAL_ERROR:
         free(x->data.error.str);
         break;
     case MAL_FUNCTION:
-        mal_obj_free(x->data.function.params);
-        mal_obj_free(x->data.function.body);
+        mal_obj_free(x->data.function->params);
+        mal_obj_free(x->data.function->body);
+        // the free below is too agressive, multiple functions can reference the same environment
+        //mal_env_free(x->data.function->env); // FIXME: memory leak
+        free(x->data.function);
         break;
     default:
         break;

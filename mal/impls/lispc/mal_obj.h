@@ -19,7 +19,7 @@ mal_obj_t mal_obj_builtin(fun_t fn_ptr);
 mal_obj_t mal_obj_boolean(bool boolean);
 mal_obj_t mal_obj_nil();
 mal_obj_t mal_obj_empty();
-mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body);
+mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body, mal_env_t *env);
 
 #define MAL_BOOL_ASSERT(feedback, cond, err_fmt, ...)                   \
     if (!(cond)) {                                                      \

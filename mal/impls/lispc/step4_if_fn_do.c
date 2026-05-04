@@ -45,68 +45,47 @@ mal_obj_t mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj)
     int list_len = mal_list_len(list);
     mal_obj_t *zeroth = mal_list_get(list, 0);
 
-    MAL_OBJ_ASSERT(zeroth->type == MAL_SYMBOL,
-                   "First element '%s' of expression is not a symbol", mal_obj_sprint(zeroth));
     mal_obj_t func = mal_eval(env, zeroth);
     if (func.type == MAL_ERROR)
         return func;
+    MAL_OBJ_ASSERT(func.type == MAL_BUILTIN || func.type == MAL_FUNCTION,
+                   "Error: Parameter '%s' cannot be used as a function to evaluate", mal_obj_sprint(&func));
 
-    mal_list_t *list_to_eval = mal_list_create(8);
-    for (int i = 0; i < list_len; i++)
+    mal_list_t *eval_args = mal_list_create(16);
+    for (int i = 1; i < list_len; i++) // start from 1, the zeroth was already evaluated
     {
-        mal_obj_t result = mal_eval(env, mal_list_get(list, i));
-        if (result.type == MAL_ERROR)
+        mal_obj_t arg = mal_eval(env, mal_list_get(list, i));
+        if (arg.type == MAL_ERROR)
         {
-            mal_list_free(list_to_eval);
-            return result;
+            mal_list_free(eval_args);
+            return arg;
         }
-        mal_list_push_back(list_to_eval, result);
+        mal_list_push_back(eval_args, arg);
     }
+
+    mal_obj_t final_result;
 
     if (func.type == MAL_BUILTIN)
     {
-        return func.data.builtin_fn(list_to_eval);
+        final_result = func.data.builtin_fn(eval_args);
     }
     else if (func.type == MAL_FUNCTION)
     {
-        mal_closure_t *f = &func.data.function;
-        mal_env_t *call_env = mal_env_create(env);
-        if (!mal_env_bind(call_env, f->params, list_to_eval,
-    }
+        mal_closure_t *f = func.data.function;
+        mal_obj_t err_feedback;
+        mal_env_t *call_env = mal_env_create(f->env);
 
-
-    // from the loop above, the first symbol was already evaluated to MAL_BUILTIN or MAL_ERROR
-    mal_obj_t func_symbol;
-    mal_list_peek_front(list, &func_symbol);
-    MAL_OBJ_ASSERT(list_obj, func_symbol.type != MAL_ERROR,
-                   "%s", mal_obj_sprint(&func_symbol));
-    // pop the symbol, and let it act on the rest of the list
-    mal_list_pop_front(list, NULL);
-    if (func_symbol.type == MAL_BUILTIN) { /* builtin function */
-        func_symbol.data.builtin_fn(list_obj);
-    }
-    else if (func_symbol.type == MAL_FUNCTION) { /* user defined function, a.k.a. closure */
-        /* FIXME: THERE IS A BIG PROBLEM HERE IF THE MAL_FUNCTION IS IN "def!" */
-        mal_closure_t *f = func_symbol.data.function;
-        mal_env_t *call_env = mal_env_create(env);
-        if (!mal_env_bind(call_env, f->params, list_obj, list_obj)) {
-            /* mal_env_bind frees the upper node and puts an error in it */
-            /* we need to free the closure (that was popped from the upper node) */
-            mal_obj_free(&func_symbol); /* should not free if the MAL_FUNCTION comes from def!, we want to reuse it */
-            return false;
+        if (mal_env_bind(call_env, f->params->data.list, eval_args, &err_feedback)) {
+            final_result = mal_eval(call_env, f->body);
         }
-        mal_eval(f->body, call_env); /* this is problematic, because we actually lose the function body (because the evaluation is in-place) */
-        mal_obj_free(list_obj);
-        *list_obj = *(f->body);
+        else {
+            final_result = err_feedback;
+        }
         mal_env_free(call_env);
-        mal_obj_free(&func_symbol); /* we actually don't want to do that if the MAL_FUNCTION comes from "def!" */
     }
-    return true;
-    break;
-}
+    mal_list_free(eval_args);
 
-mal_obj_t mal_apply(mal_env_t *env, mal_obj_t *node)
-{
+    return final_result;
 }
 
 // assumes 0th element of MAL_LIST is the symbol "def!"
@@ -150,16 +129,11 @@ mal_obj_t mal_handle_let(mal_env_t *env, mal_obj_t *list_obj)
     for (int i = 0; i < mal_list_len(bindings); i += 2)
     {
         mal_obj_t *symbol = mal_list_get(bindings, i);
-        mal_obj_t bounded_symbol;
 
-        bool can_bind = symbol->type == MAL_SYMBOL &&
-            !mal_env_get(env, symbol->data.symbol, &bounded_symbol) ||
-            bounded_symbol.type != MAL_BUILTIN;
-
-        if (!can_bind)
+        if (!(symbol->type == MAL_SYMBOL))
         {
             mal_env_free(new_env);
-            return mal_obj_error_format("Error: Invalid symbol '%s' found in let* expression",
+            return mal_obj_error_format("Error: Cannot bind non-symbol '%s' in let* expression",
                                         mal_obj_sprint(symbol));
         }
 
@@ -185,7 +159,12 @@ mal_obj_t mal_handle_fn(mal_env_t *env, mal_obj_t *list_obj)
 
     mal_obj_t *binds = mal_list_get(list, 1);
     mal_obj_t *body = mal_list_get(list, 2);
-    return mal_obj_function(binds, body);
+
+    // transfering ownership to the MAL_FUNCTION, popping 'binds' and 'body' from the original AST
+    mal_list_pop_back(list, NULL);
+    mal_list_pop_back(list, NULL);
+
+    return mal_obj_function(binds, body, env);
 }
 
 // assumes node->type == MAL_LIST
@@ -234,11 +213,19 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         puts("");
         return false;
     }
+
     mal_obj_t root = read_str(reader, input);
-    mal_eval(env, &root);
-    mal_print(&root);
+    printf("root = %s, type = %d\n", mal_obj_sprint(&root), root.type);
+    mal_obj_t result = mal_eval(env, &root);
+
+    // free now, 'result' should not depend on root or input anymore
     mal_obj_free(&root);
     free(input);
+
+    // FIXME: in 'def!' case where it returns a function, it frees and put in the environment
+    mal_print(&result);
+    mal_obj_free(&result);
+
     return true;
 }
 
