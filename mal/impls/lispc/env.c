@@ -74,9 +74,16 @@ bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t **out) {
     return false;
 }
 
+static void mal_env_register_builtin(mal_env_t *env, char *symbol, fun_t func)
+{
+    mal_obj_t *obj = mal_obj_builtin(func);
+    mal_env_set(env, str_from_cstr(symbol), obj);
+    mal_obj_release(obj);
+}
+
 void mal_env_register_builtins(mal_env_t *env) {
-    mal_env_set(env, str_from_cstr("+"), mal_obj_builtin(builtin_add));
-    mal_env_set(env, str_from_cstr("-"), mal_obj_builtin(builtin_sub));
-    mal_env_set(env, str_from_cstr("*"), mal_obj_builtin(builtin_mul));
-    mal_env_set(env, str_from_cstr("/"), mal_obj_builtin(builtin_div));
+    mal_env_register_builtin(env, "+", builtin_add);
+    mal_env_register_builtin(env, "-", builtin_sub);
+    mal_env_register_builtin(env, "*", builtin_mul);
+    mal_env_register_builtin(env, "/", builtin_div);
 }

@@ -1,0 +1,40 @@
+(def! a 6)
+(def! b (+ a 2))
+(def! x 3)
+(def! x 4)
+(def! y (+ 1 7))
+(def! mynum 111)
+(def! MYNUM 222)
+(def! w 123)
+(def! w (abc))
+(let* (z 9) z)
+(let* (x 9) x)
+(let* (z (+ 2 3)) (+ 1 z))
+(let* (p (+ 2 3) q (+ 2 p)) (+ p q))
+(def! y (let* (z 7) z))
+(def! a 4)
+(let* (q 9) q)
+(let* (q 9) a)
+(let* (z 2) (let* (q 9) a))
+(let* (x 2 x 3) x)
+(let* (c a) c)
+(let* (c 123) (abc))
+(let* (c 123) (+ abc 123))
+(def! a bbb)
+(def! a (let* (b 4) (abc (abc))))
+true
+false
+true
+false
+(+ pi false)
+(- pi true)
+(def! true 3)
+true
+(+ true true)
+(def! true 3)
+true
+(def! false 1)
+false
+(+ true true)
+(- true true)
+(let* (nil 3) nil)
