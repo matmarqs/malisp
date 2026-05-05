@@ -34,6 +34,7 @@ typedef struct mal_closure_t {
 
 struct mal_obj_t {
     uint8_t type;
+    int refcount;
     union {
         mal_list_t *list;
         int64_t number;

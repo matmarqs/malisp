@@ -46,8 +46,7 @@ mal_obj_t mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj)
     mal_obj_t *zeroth = mal_list_get(list, 0);
 
     mal_obj_t func = mal_eval(env, zeroth);
-    if (func.type == MAL_ERROR)
-        return func;
+    if (func.type == MAL_ERROR) return func;
     MAL_OBJ_ASSERT(func.type == MAL_BUILTIN || func.type == MAL_FUNCTION,
                    "Error: Parameter '%s' cannot be used as a function to evaluate", mal_obj_sprint(&func));
 
@@ -83,7 +82,12 @@ mal_obj_t mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj)
         }
         mal_env_free(call_env);
     }
+
+    for (int i = 0; i < mal_list_len(eval_args); i++) {
+        mal_obj_release(mal_list_get(eval_args, i));
+    }
     mal_list_free(eval_args);
+    mal_obj_release(&func);
 
     return final_result;
 }
@@ -215,16 +219,15 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
     }
 
     mal_obj_t root = read_str(reader, input);
-    printf("root = %s, type = %d\n", mal_obj_sprint(&root), root.type);
     mal_obj_t result = mal_eval(env, &root);
 
     // free now, 'result' should not depend on root or input anymore
-    mal_obj_free(&root);
+    mal_obj_release(&root);
     free(input);
 
     // FIXME: in 'def!' case where it returns a function, it frees and put in the environment
     mal_print(&result);
-    mal_obj_free(&result);
+    mal_obj_release(&result);
 
     return true;
 }

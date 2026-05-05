@@ -8,6 +8,7 @@ IMPLEMENT_DEQUE(mal_obj_t, mal_list, mal_list_t);
 mal_obj_t mal_obj_symbol(char *token, int token_sz) {
     mal_obj_t x = {
         .type = MAL_SYMBOL,
+        .refcount = 1,
         .data = {
             .symbol = {
                 .str = token,
@@ -21,6 +22,7 @@ mal_obj_t mal_obj_symbol(char *token, int token_sz) {
 mal_obj_t mal_obj_num(int64_t num) {
     mal_obj_t x = {
         .type = MAL_NUMBER,
+        .refcount = 1,
         .data = {
             .number = num,
         },
@@ -54,6 +56,7 @@ mal_obj_t mal_obj_error_format(const char *fmt, ...) {
 mal_obj_t mal_obj_list(int list_size) {
     mal_obj_t x = {
         .type = MAL_LIST,
+        .refcount = 1,
         .data = {
             .list = mal_list_create(list_size), // alloc list in the heap
         },
@@ -64,6 +67,7 @@ mal_obj_t mal_obj_list(int list_size) {
 mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
     mal_obj_t x = {
         .type = MAL_BUILTIN,
+        .refcount = 1,
         .data = {
             .builtin_fn = fn_ptr,
         },
@@ -74,6 +78,7 @@ mal_obj_t mal_obj_builtin(fun_t fn_ptr) {
 mal_obj_t mal_obj_boolean(bool boolean) {
     mal_obj_t x = {
         .type = MAL_BOOLEAN,
+        .refcount = 1,
         .data = {
             .boolean = boolean,
         },
@@ -84,6 +89,7 @@ mal_obj_t mal_obj_boolean(bool boolean) {
 mal_obj_t mal_obj_nil() {
     mal_obj_t x = {
         .type = MAL_NIL,
+        .refcount = 1,
         .data = {
             .nil = false,
         },
@@ -93,11 +99,15 @@ mal_obj_t mal_obj_nil() {
 
 mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body, mal_env_t *env) {
     mal_closure_t *f = malloc(sizeof(mal_closure_t));
+    mal_obj_retain(params);
+    mal_obj_retain(body);
     f->params = params;
     f->body = body;
-    f->env = env;
+    f->env = mal_env_create(env); // function has its own environment
+    // orig_env <- function_env (freed when the function is freed) <- call_env (freed after eval)
     mal_obj_t x = {
         .type = MAL_FUNCTION,
+        .refcount = 1,
         .data = {
             .function = f,
         },
@@ -109,34 +119,44 @@ mal_obj_t mal_obj_function(mal_obj_t *params, mal_obj_t *body, mal_env_t *env) {
 mal_obj_t mal_obj_empty() {
     mal_obj_t x = {
         .type = MAL_EMPTY,
+        .refcount = 1,
         .data = { 0 },
     };
     return x;
 }
 
-void mal_obj_free(mal_obj_t *x) {
-    switch (x->type) {
-    case MAL_LIST:
-        for (int i = 0; i < mal_list_len(x->data.list); i++) {
-            mal_obj_free(mal_list_get(x->data.list, i));
+void mal_obj_retain(mal_obj_t *obj)
+{
+    if (obj) obj->refcount++;
+}
+
+void mal_obj_release(mal_obj_t *x)
+{
+    if (!x) return;
+    if (--x->refcount == 0) {
+        switch (x->type)  {
+        case MAL_LIST:
+            for (int i = 0; i < mal_list_len(x->data.list); i++) {
+                mal_obj_release(mal_list_get(x->data.list, i));
+            }
+            mal_list_free(x->data.list);
+            break;
+        case MAL_SYMBOL:
+            free(x->data.symbol.str);
+            break;
+        case MAL_ERROR:
+            free(x->data.error.str);
+            break;
+        case MAL_FUNCTION:
+            mal_obj_release(x->data.function->params);
+            mal_obj_release(x->data.function->body);
+            mal_env_free(x->data.function->env); // the function owns its environment
+            // orig_env <- function_env (freed when the function is freed) <- call_env (freed after eval)
+            free(x->data.function);
+            break;
+        default:
+            break;
         }
-        mal_list_free(x->data.list);
-        break;
-    case MAL_SYMBOL:
-        free(x->data.symbol.str);
-        break;
-    case MAL_ERROR:
-        free(x->data.error.str);
-        break;
-    case MAL_FUNCTION:
-        mal_obj_free(x->data.function->params);
-        mal_obj_free(x->data.function->body);
-        // the free below is too agressive, multiple functions can reference the same environment
-        //mal_env_free(x->data.function->env); // FIXME: memory leak
-        free(x->data.function);
-        break;
-    default:
-        break;
     }
 }
 
