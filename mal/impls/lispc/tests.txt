@@ -70,8 +70,8 @@ nil
 (- nil)
 (let* (nil 3) nil)
 
-              
-    
+
+
 
   (
  ()
@@ -86,3 +86,13 @@ nil
 ( (fn* (a b) (+ a b)) 2 3)
 (def! sum1 (fn* (a) (+ a 1)))
 (sum1 4)
+((def! sum1 (fn* (a) (+ a 1))) 3)
+(sum1 4)
+(sum1 56)
+(fn* (a) a)
+( (fn* (a) a) 7)
+( (fn* (a) (+ a 1)) 10)
+( (fn* (a b) (+ a b)) 2 3)
+(def! sum1 (fn* (a) (+ a 1)))
+(sum1 4)
+(sum1 3)
