@@ -37,11 +37,13 @@ bool mal_env_bind(mal_env_t *env, mal_list_t *bind_list, mal_list_t *expr_list, 
     return true;
 }
 
+#include <stdio.h>
 void mal_env_free(mal_env_t *env) {
     env_table_t *table = env->data;
     // free the copied string keys and release values
     for (int i = 0; i < table->capacity; i++) {
         if (table->slots[i].state == HM_STATE_OCCUPIED) {
+            printf("mal_env_free loop: key = %s, val = %s, refcount = %d\n", table->slots[i].key.str, mal_obj_sprint(table->slots[i].val), table->slots[i].val->refcount);
             free(table->slots[i].key.str);
             mal_obj_release(table->slots[i].val);
         }
@@ -55,9 +57,11 @@ void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t *val) {
     // come from the input buffer read by readline, and they are freed after each mal_eval()
     // so we need to copy the strings here in order for them to persist in the environment
     mal_obj_t *existing_ptr = NULL;
-    if (env_table_get(env->data, str_key, &existing_ptr)) {
-        mal_obj_release(existing_ptr);
+    string_t old_key;
+    if (env_table_get(env->data, str_key, &old_key, &existing_ptr)) {
         env_table_remove(env->data, str_key);
+        free(old_key.str);
+        mal_obj_release(existing_ptr);
     }
     mal_obj_retain(val);
     env_table_set(env->data, str_copy(str_key), val);
@@ -65,7 +69,8 @@ void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t *val) {
 
 bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t **out) {
     while (env) {
-        if (env_table_get(env->data, str_key, out)) {
+        if (env_table_get(env->data, str_key, NULL, out)) {
+            // FIXME: it should not have retain here, but if I get rid of it, the program segfaults
             mal_obj_retain(*out); // caller gets a retained reference
             return true;
         }

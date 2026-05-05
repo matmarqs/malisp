@@ -20,7 +20,7 @@ typedef enum { HM_STATE_FREE, HM_STATE_OCCUPIED, HM_STATE_DELETED } _hashmap_slo
     } name;                                                         \
     name *prefix##_init(int initial_capacity);                      \
     void prefix##_free(name *map);                                  \
-    bool prefix##_get(name *map, key_type key, val_type *out);      \
+    bool prefix##_get(name *map, key_type key, key_type *old_key, val_type *out); \
     void prefix##_set(name *map, key_type key, val_type val);       \
     void prefix##_remove(name *map, key_type key);
 
@@ -66,7 +66,7 @@ typedef enum { HM_STATE_FREE, HM_STATE_OCCUPIED, HM_STATE_DELETED } _hashmap_slo
         free(map->slots);                                               \
         free(map);                                                      \
     }                                                                   \
-    bool prefix##_get(name *map, key_type key, val_type *out) {         \
+    bool prefix##_get(name *map, key_type key, key_type *old_key, val_type *out) { \
         if (map->size == 0) return false;                               \
         size_t hash_val = hash_func(key);                               \
         int idx = (int)(hash_val & (map->capacity - 1));                \
@@ -75,6 +75,7 @@ typedef enum { HM_STATE_FREE, HM_STATE_OCCUPIED, HM_STATE_DELETED } _hashmap_slo
             if (map->slots[j].state == HM_STATE_FREE) break;            \
             if (map->slots[j].state == HM_STATE_OCCUPIED &&             \
                 key_equals(map->slots[j].key, key)) {                   \
+                if (old_key) *old_key = map->slots[j].key;              \
                 if (out) *out = map->slots[j].val;                      \
                 return true;                                            \
             }                                                           \

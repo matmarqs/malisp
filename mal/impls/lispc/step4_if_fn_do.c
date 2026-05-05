@@ -58,6 +58,7 @@ mal_obj_t *mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj) {
                 mal_obj_release(*(mal_list_get(eval_args, j)));
             }
             mal_list_free(eval_args);
+            mal_obj_release(func);
             return arg;
         }
         mal_list_push_back(eval_args, arg);

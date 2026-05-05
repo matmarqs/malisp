@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -std=c99 -Og -g -Wall $(shell pkg-config --cflags libeditline libpcre2-8)
-LDFLAGS =  $(shell pkg-config --libs libeditline libpcre2-8)
+CFLAGS = -std=c99 -Og -g -Wall $(shell pkg-config --cflags libedit libpcre2-8)
+LDFLAGS =  $(shell pkg-config --libs libedit libpcre2-8)
 
 all: step4_if_fn_do
 
