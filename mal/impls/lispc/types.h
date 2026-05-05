@@ -22,7 +22,7 @@ typedef struct mal_list_t mal_list_t;
 
 typedef struct mal_obj_t mal_obj_t;
 
-typedef mal_obj_t (*fun_t)(mal_list_t *); // return bool (if success): modify the (mal_obj_t *) in place
+typedef mal_obj_t* (*fun_t)(mal_list_t *);
 
 typedef struct mal_env_t mal_env_t; // forward declaration
 
@@ -42,16 +42,15 @@ struct mal_obj_t {
         string_t error;
         fun_t builtin_fn;
         bool boolean;
-        bool nil;
         mal_closure_t *function;
     } data;
 };
 
-DEFINE_HASHMAP(env_table_t, env_table, string_t, mal_obj_t);
+DEFINE_HASHMAP(env_table_t, env_table, string_t, mal_obj_t *);
 
 typedef struct mal_env_t {
     struct mal_env_t *outer;
-    env_table_t *data; // associative data structure, hashmap...
+    env_table_t *data;
 } mal_env_t;
 
 #endif // _TYPES_H

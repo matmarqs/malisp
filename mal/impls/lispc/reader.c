@@ -66,14 +66,19 @@ static int mal_reader_next(mal_reader_t *reader) {
     return -1;
 }
 
-static mal_obj_t read_atom(mal_reader_t *reader) {
+static mal_obj_t *read_atom(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
     int token_size = reader->token.size;
+
+    // Handle empty token
+    if (token_size == 0 || !token) {
+        return mal_obj_empty();
+    }
+
     // Check if it's a negative number: starts with '-' followed by digits
     int is_negative = 0;
     int start_idx = 0;
     if (token_size > 1 && token[0] == '-') {
-        // Check if remaining chars are digits
         int all_digits = 1;
         for (int i = 1; i < token_size; i++) {
             if (token[i] < '0' || token[i] > '9') {
@@ -120,10 +125,10 @@ static mal_obj_t read_atom(mal_reader_t *reader) {
     return mal_obj_symbol(copy.str, copy.len);
 }
 
-static mal_obj_t read_form(mal_reader_t *reader);
+static mal_obj_t *read_form(mal_reader_t *reader);
 
-static mal_obj_t read_list(mal_reader_t *reader) {
-    mal_obj_t root = mal_obj_list(8);
+static mal_obj_t *read_list(mal_reader_t *reader) {
+    mal_obj_t *root = mal_obj_list(8);
     do {
         int offset = mal_reader_next(reader);
         if (offset == -1) {
@@ -135,17 +140,16 @@ static mal_obj_t read_list(mal_reader_t *reader) {
         if (strncmp(token, ")", 1) == 0) {
             break;
         }
-        mal_obj_t mal_object = read_form(reader);
-        mal_list_push_back(root.data.list, mal_object);
+        mal_obj_t *mal_object = read_form(reader);
+        mal_list_push_back(root->data.list, mal_object);
     } while (1);
     return root;
 }
 
-static mal_obj_t read_form(mal_reader_t *reader) {
-    // peek at the current token of Reader object
+static mal_obj_t *read_form(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
-    if (!token) {
-        return mal_obj_symbol("", 0);
+    if (!token || reader->token.size == 0) {
+        return mal_obj_empty();
     }
     if (strncmp(token, "(", 1) == 0) {
         return read_list(reader);
@@ -155,7 +159,7 @@ static mal_obj_t read_form(mal_reader_t *reader) {
     }
 }
 
-mal_obj_t read_str(mal_reader_t *reader, char *str) {
+mal_obj_t *read_str(mal_reader_t *reader, char *str) {
     mal_reader_buffer_init(reader, str);
     mal_reader_next(reader);
     return read_form(reader);
