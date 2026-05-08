@@ -43,7 +43,7 @@ void mal_env_free(mal_env_t *env) {
     // free the copied string keys and release values
     for (int i = 0; i < table->capacity; i++) {
         if (table->slots[i].state == HM_STATE_OCCUPIED) {
-            printf("mal_env_free loop: key = %s, val = %s, refcount = %d\n", table->slots[i].key.str, mal_obj_sprint(table->slots[i].val), table->slots[i].val->refcount);
+            //printf("mal_env_free loop: key = %s, val = %s, refcount = %d\n", table->slots[i].key.str, mal_obj_sprint(table->slots[i].val), table->slots[i].val->refcount);
             free(table->slots[i].key.str);
             mal_obj_release(table->slots[i].val);
         }

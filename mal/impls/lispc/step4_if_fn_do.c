@@ -46,8 +46,14 @@ mal_obj_t *mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj) {
 
     mal_obj_t *func = mal_eval(env, zeroth);
     if (func->type == MAL_ERROR) return func;
-    MAL_OBJ_ASSERT(func->type == MAL_BUILTIN || func->type == MAL_FUNCTION,
-                   "Error: Parameter '%s' cannot be used as a function to evaluate", mal_obj_sprint(func));
+    if (!(func->type == MAL_BUILTIN || func->type == MAL_FUNCTION))
+    {
+        mal_obj_t *err = mal_obj_error_format(
+            "Error: Parameter '%s' cannot be used as a function to evaluate",
+            mal_obj_sprint(func));
+        mal_obj_release(func);
+        return err;
+    }
 
     mal_list_t *eval_args = mal_list_create(16);
     for (int i = 1; i < list_len; i++) {
@@ -215,7 +221,7 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         return true;
     }
 
-    puts(input);
+    //puts(input);
 
     mal_obj_t *root = read_str(reader, input);
     mal_obj_t *result = mal_eval(env, root);

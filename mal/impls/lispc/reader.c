@@ -133,7 +133,11 @@ static mal_obj_t *read_list(mal_reader_t *reader) {
         int offset = mal_reader_next(reader);
         if (offset == -1) {
             // EOF error
-            printf("read_list: Error, offset == -1, EOF\n");
+            printf("Error: Parsing error, EOF\n");
+            break;
+        }
+        int token_size = (int) reader->token.size;
+        if (token_size == 0) {
             break;
         }
         char *token = (char *)reader->token.pos;
