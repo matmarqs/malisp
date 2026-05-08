@@ -111,13 +111,13 @@ static mal_obj_t *read_atom(mal_reader_t *reader) {
         }
         return mal_obj_num(num);
     }
-    if (strncmp(token, "true", 4) == 0) {
+    if (token_size == 4 && strncmp(token, "true", 4) == 0) {
         return mal_obj_boolean(true);
     }
-    else if (strncmp(token, "false", 5) == 0) {
+    else if (token_size == 5 && strncmp(token, "false", 5) == 0) {
         return mal_obj_boolean(false);
     }
-    else if (strncmp(token, "nil", 3) == 0) {
+    else if (token_size == 3 && strncmp(token, "nil", 3) == 0) {
         return mal_obj_nil();
     }
     // match symbols
@@ -141,7 +141,7 @@ static mal_obj_t *read_list(mal_reader_t *reader) {
             break;
         }
         char *token = (char *)reader->token.pos;
-        if (strncmp(token, ")", 1) == 0) {
+        if (token_size == 1 && strncmp(token, ")", 1) == 0) {
             break;
         }
         mal_obj_t *mal_object = read_form(reader);
@@ -152,10 +152,11 @@ static mal_obj_t *read_list(mal_reader_t *reader) {
 
 static mal_obj_t *read_form(mal_reader_t *reader) {
     char *token = (char *)reader->token.pos;
-    if (!token || reader->token.size == 0) {
+    int token_size = reader->token.size;
+    if (!token || token_size == 0) {
         return mal_obj_empty();
     }
-    if (strncmp(token, "(", 1) == 0) {
+    if (token_size == 1 && strncmp(token, "(", 1) == 0) {
         return read_list(reader);
     }
     else {

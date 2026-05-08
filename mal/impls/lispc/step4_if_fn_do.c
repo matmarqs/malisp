@@ -170,6 +170,44 @@ mal_obj_t *mal_handle_fn(mal_env_t *env, mal_obj_t *list_obj) {
     return mal_obj_function(binds, body, env);
 }
 
+mal_obj_t *mal_handle_if(mal_env_t *env, mal_obj_t *list_obj)
+{
+    mal_list_t *list = list_obj->data.list;
+    int len = mal_list_len(list);
+    MAL_OBJ_ASSERT(3 <= len && len <= 4, "Error: 'if' expects 2 or 3 parameters. Got %d", len-1);
+
+    mal_obj_t *first = mal_eval(env, *mal_list_get(list, 1));
+    bool cond = !((first->type == MAL_BOOLEAN && !first->data.boolean) || first->type == MAL_NIL);
+
+    mal_obj_t *result;
+
+    if (cond) {
+        result = mal_eval(env, *mal_list_get(list, 2));
+    }
+    else if (len < 4) { // there is no third parameter
+        result = mal_obj_nil();
+    }
+    else {
+        result = mal_eval(env, *mal_list_get(list, 3));
+    }
+
+    mal_obj_release(first);
+    return result;
+}
+
+mal_obj_t *mal_handle_do(mal_env_t *env, mal_obj_t *list_obj) {
+    mal_list_t *list = list_obj->data.list;
+    int len = mal_list_len(list);
+
+    mal_obj_t *evaluated;
+    for (int i = 1; i < len-1; i++) {
+        evaluated = mal_eval(env, *mal_list_get(list, i));
+        mal_obj_release(evaluated);
+    }
+
+    return mal_eval(env, *mal_list_get(list, len-1));
+}
+
 // assumes node->type == MAL_LIST
 mal_obj_t *mal_eval_list(mal_env_t *env, mal_obj_t *node) {
     mal_list_t *list = node->data.list;
@@ -179,14 +217,21 @@ mal_obj_t *mal_eval_list(mal_env_t *env, mal_obj_t *node) {
     mal_obj_t *first = *mal_list_get(list, 0);
     if (first->type == MAL_SYMBOL) {
         char *symbol = first->data.symbol.str;
-        if (strncmp(symbol, "def!", 4) == 0) {
+        int len = first->data.symbol.len;
+        if (len == 2 && strncmp(symbol, "if", 2) == 0) {
+            return mal_handle_if(env, node);
+        }
+        if (len == 4 && strncmp(symbol, "def!", 4) == 0) {
             return mal_handle_def(env, node);
         }
-        if (strncmp(symbol, "let*", 4) == 0) {
-            return mal_handle_let(env, node);
-        }
-        if (strncmp(symbol, "fn*", 3) == 0) {
+        if (len == 3 && strncmp(symbol, "fn*", 3) == 0) {
             return mal_handle_fn(env, node);
+        }
+        if (len == 2 && strncmp(symbol, "do", 2) == 0) {
+            return mal_handle_do(env, node);
+        }
+        if (len == 4 && strncmp(symbol, "let*", 4) == 0) {
+            return mal_handle_let(env, node);
         }
     }
 
@@ -219,7 +264,7 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         return true;
     }
 
-    puts(input);
+    //puts(input);
 
     mal_obj_t *root = read_str(reader, input);
     mal_obj_t *result = mal_eval(env, root);
