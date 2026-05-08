@@ -35,14 +35,14 @@ mal_obj_t *mal_eval_symbol(mal_env_t *env, mal_obj_t *node) {
     mal_obj_t *value = NULL;
     MAL_OBJ_ASSERT(mal_env_get(env, node->data.symbol, &value),
                    "Error: Symbol '%s' not found", mal_obj_sprint(node));
+    mal_obj_retain(value);
     return value;
 }
 
 mal_obj_t *mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj) {
     mal_list_t *list = list_obj->data.list;
     int list_len = mal_list_len(list);
-    mal_obj_t **zeroth_ptr = mal_list_get(list, 0);
-    mal_obj_t *zeroth = zeroth_ptr ? *zeroth_ptr : NULL;
+    mal_obj_t *zeroth = *mal_list_get(list, 0);
 
     mal_obj_t *func = mal_eval(env, zeroth);
     if (func->type == MAL_ERROR) return func;
@@ -160,14 +160,8 @@ mal_obj_t *mal_handle_fn(mal_env_t *env, mal_obj_t *list_obj) {
     MAL_OBJ_ASSERT(mal_list_len(list) == 3,
                    "Error: fn* expects 2 arguments. Got %d", mal_list_len(list));
 
-    mal_obj_t **binds_ptr = mal_list_get(list, 1);
-    mal_obj_t **body_ptr = mal_list_get(list, 2);
-    mal_obj_t *binds = *binds_ptr;
-    mal_obj_t *body = *body_ptr;
-
-    // transfer ownership to the MAL_FUNCTION, popping 'binds' and 'body' from the original AST
-    mal_list_pop_back(list, NULL);
-    mal_list_pop_back(list, NULL);
+    mal_obj_t *binds = *mal_list_get(list, 1);
+    mal_obj_t *body = *mal_list_get(list, 2);
 
     return mal_obj_function(binds, body, env);
 }
@@ -178,8 +172,7 @@ mal_obj_t *mal_eval_list(mal_env_t *env, mal_obj_t *node) {
     if (mal_list_is_empty(list))
         return mal_obj_list(0);
 
-    mal_obj_t **first_ptr = mal_list_get(list, 0);
-    mal_obj_t *first = *first_ptr;
+    mal_obj_t *first = *mal_list_get(list, 0);
     if (first->type == MAL_SYMBOL) {
         char *symbol = first->data.symbol.str;
         if (strncmp(symbol, "def!", 4) == 0) {
@@ -221,6 +214,8 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         free(input);
         return true;
     }
+
+    puts(input);
 
     mal_obj_t *root = read_str(reader, input);
     mal_obj_t *result = mal_eval(env, root);

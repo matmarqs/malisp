@@ -70,8 +70,6 @@ void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t *val) {
 bool mal_env_get(mal_env_t *env, string_t str_key, mal_obj_t **out) {
     while (env) {
         if (env_table_get(env->data, str_key, NULL, out)) {
-            // FIXME: it should not have retain here, but if I get rid of it, the program segfaults
-            mal_obj_retain(*out); // caller gets a retained reference
             return true;
         }
         env = env->outer;
