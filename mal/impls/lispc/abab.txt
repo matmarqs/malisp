@@ -1,4 +1,0 @@
-(def! add1 (fn* (x) (fn* (y) (fn* (z) (+ x y z)))))
-(def! add1a (add1 1))
-(def! add1ab (add1a 2))
-(add1ab 3)

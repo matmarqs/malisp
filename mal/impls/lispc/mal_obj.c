@@ -82,8 +82,8 @@ mal_obj_t *mal_obj_function(mal_obj_t *params, mal_obj_t *body, mal_env_t *env) 
     mal_obj_retain(body);
     f->params = params;
     f->body = body;
-    f->env = mal_env_create(env); // function has its own environment
-    // original_env <- function_env (freed when the function is freed) <- call_env (freed after eval)
+    mal_env_retain(env);
+    f->env = env;
     mal_obj_t *x = malloc(sizeof(mal_obj_t));
     x->type = MAL_FUNCTION;
     x->refcount = 1;
@@ -121,7 +121,7 @@ void mal_obj_release(mal_obj_t *x) {
         case MAL_FUNCTION:
             mal_obj_release(x->data.function->params);
             mal_obj_release(x->data.function->body);
-            mal_env_free(x->data.function->env);
+            mal_env_release(x->data.function->env);
             free(x->data.function);
             break;
         default:

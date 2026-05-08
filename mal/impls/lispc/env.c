@@ -9,6 +9,8 @@ IMPLEMENT_HASHMAP(env_table_t, env_table, string_t, mal_obj_t *, str_hash, str_e
 // this is actually a single linked-list (outer environments)
 mal_env_t *mal_env_create(mal_env_t *outer) {
     mal_env_t *env = (mal_env_t *) malloc(sizeof(mal_env_t));
+    env->refcount = 1;
+    mal_env_retain(outer);
     env->outer = outer;
     env->data = env_table_init(16);
     return env;
@@ -37,19 +39,25 @@ bool mal_env_bind(mal_env_t *env, mal_list_t *bind_list, mal_list_t *expr_list, 
     return true;
 }
 
-#include <stdio.h>
-void mal_env_free(mal_env_t *env) {
-    env_table_t *table = env->data;
-    // free the copied string keys and release values
-    for (int i = 0; i < table->capacity; i++) {
-        if (table->slots[i].state == HM_STATE_OCCUPIED) {
-            //printf("mal_env_free loop: key = %s, val = %s, refcount = %d\n", table->slots[i].key.str, mal_obj_sprint(table->slots[i].val), table->slots[i].val->refcount);
-            free(table->slots[i].key.str);
-            mal_obj_release(table->slots[i].val);
+void mal_env_retain(mal_env_t *env) {
+    if (env) env->refcount++;
+}
+
+void mal_env_release(mal_env_t *env) {
+    if (!env) return;
+    if (--env->refcount == 0) {
+        env_table_t *table = env->data;
+        // free the copied string keys and release values
+        for (int i = 0; i < table->capacity; i++) {
+            if (table->slots[i].state == HM_STATE_OCCUPIED) {
+                free(table->slots[i].key.str);
+                mal_obj_release(table->slots[i].val);
+            }
         }
+        env_table_free(table);
+        mal_env_release(env->outer);
+        free(env);
     }
-    env_table_free(table);
-    free(env);
 }
 
 void mal_env_set(mal_env_t *env, string_t str_key, mal_obj_t *val) {

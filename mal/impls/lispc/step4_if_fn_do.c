@@ -85,7 +85,7 @@ mal_obj_t *mal_handle_apply(mal_env_t *env, mal_obj_t *list_obj) {
         } else {
             final_result = err_feedback;
         }
-        mal_env_free(call_env);
+        mal_env_release(call_env);
     }
 
     for (int i = 0; i < mal_list_len(eval_args); i++) {
@@ -104,13 +104,11 @@ mal_obj_t *mal_handle_def(mal_env_t *env, mal_obj_t *list_obj) {
     MAL_OBJ_ASSERT(mal_list_len(list) == 3,
                    "Error: def! expects 2 arguments. Got %d", mal_list_len(list)-1);
 
-    mal_obj_t **first_ptr = mal_list_get(list, 1);
-    mal_obj_t *first = *first_ptr;
+    mal_obj_t *first = *mal_list_get(list, 1);
     MAL_OBJ_ASSERT(first->type == MAL_SYMBOL,
                    "First element '%s' of def! is not a symbol", mal_obj_sprint(first));
 
-    mal_obj_t **second_ptr = mal_list_get(list, 2);
-    mal_obj_t *second = *second_ptr;
+    mal_obj_t *second = *mal_list_get(list, 2);
     mal_obj_t *result = mal_eval(env, second);
 
     if (result->type != MAL_ERROR) {
@@ -139,7 +137,7 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
         mal_obj_t *symbol = *symbol_ptr;
 
         if (!(symbol->type == MAL_SYMBOL)) {
-            mal_env_free(new_env);
+            mal_env_release(new_env);
             return mal_obj_error_format("Error: Cannot bind non-symbol '%s' in let* expression",
                                         mal_obj_sprint(symbol));
         }
@@ -147,7 +145,7 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
         mal_obj_t **value_ptr = mal_list_get(bindings, i+1);
         mal_obj_t *value = mal_eval(new_env, *value_ptr);
         if (value->type == MAL_ERROR) {
-            mal_env_free(new_env);
+            mal_env_release(new_env);
             return value;
         }
 
@@ -157,14 +155,14 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
 
     mal_obj_t **result_ptr = mal_list_get(list, 2);
     mal_obj_t *result = mal_eval(new_env, *result_ptr);
-    mal_env_free(new_env);
+    mal_env_release(new_env);
     return result;
 }
 
 mal_obj_t *mal_handle_fn(mal_env_t *env, mal_obj_t *list_obj) {
     mal_list_t *list = list_obj->data.list;
     MAL_OBJ_ASSERT(mal_list_len(list) == 3,
-                   "Error: fn* expects 2 arguments. Got %d", mal_list_len(list));
+                   "Error: fn* expects 2 arguments. Got %d", mal_list_len(list)-1);
 
     mal_obj_t *binds = *mal_list_get(list, 1);
     mal_obj_t *body = *mal_list_get(list, 2);
@@ -221,7 +219,7 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         return true;
     }
 
-    //puts(input);
+    puts(input);
 
     mal_obj_t *root = read_str(reader, input);
     mal_obj_t *result = mal_eval(env, root);
@@ -245,7 +243,7 @@ int main() {
         running = mal_rep(&reader, env);
     }
 
-    mal_env_free(env);
+    mal_env_release(env);
     mal_reader_regex_free(&reader);
     return 0;
 }

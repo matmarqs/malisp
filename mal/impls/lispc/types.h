@@ -49,6 +49,7 @@ struct mal_obj_t {
 DEFINE_HASHMAP(env_table_t, env_table, string_t, mal_obj_t *);
 
 typedef struct mal_env_t {
+    int refcount;
     struct mal_env_t *outer;
     env_table_t *data;
 } mal_env_t;
