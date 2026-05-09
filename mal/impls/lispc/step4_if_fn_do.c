@@ -123,8 +123,7 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
     MAL_OBJ_ASSERT(mal_list_len(list) == 3,
                    "Error: let* expects 2 arguments. Got %d", mal_list_len(list));
 
-    mal_obj_t **first_ptr = mal_list_get(list, 1);
-    mal_obj_t *first = *first_ptr;
+    mal_obj_t *first = *mal_list_get(list, 1);
     MAL_OBJ_ASSERT(first->type == MAL_LIST && mal_list_len(first->data.list) % 2 == 0,
                    "Error: The first argument of let* must be like "
                    "(key1 expr1 key2 expr2 ...)");
@@ -133,8 +132,7 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
     mal_env_t *new_env = mal_env_create(env);
 
     for (int i = 0; i < mal_list_len(bindings); i += 2) {
-        mal_obj_t **symbol_ptr = mal_list_get(bindings, i);
-        mal_obj_t *symbol = *symbol_ptr;
+        mal_obj_t *symbol = *mal_list_get(bindings, i);
 
         if (!(symbol->type == MAL_SYMBOL)) {
             mal_env_release(new_env);
@@ -142,8 +140,7 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
                                         mal_obj_sprint(symbol));
         }
 
-        mal_obj_t **value_ptr = mal_list_get(bindings, i+1);
-        mal_obj_t *value = mal_eval(new_env, *value_ptr);
+        mal_obj_t *value = mal_eval(new_env, *mal_list_get(bindings, i+1));
         if (value->type == MAL_ERROR) {
             mal_env_release(new_env);
             return value;
@@ -153,8 +150,27 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
         mal_obj_release(value); // because mal_env_set retains it
     }
 
-    mal_obj_t **result_ptr = mal_list_get(list, 2);
-    mal_obj_t *result = mal_eval(new_env, *result_ptr);
+    mal_obj_t *result = mal_eval(new_env, *mal_list_get(list, 2));
+
+    // TODO: the necessity of this code is because reference counting
+    // can not solve memory leaks cause by circular references
+    // this happens in the case: (let* (a 5 f (fn* () a) a 10) (f))
+    // the let* environment holds the closure f, which itself holds the let* environment
+    if (!result || result->type != MAL_FUNCTION) {
+        // No returned closure depends on this env, safe to break cycles.
+        env_table_t *table = new_env->data;
+        for (int i = 0; i < table->capacity; i++) {
+            if (table->slots[i].state == HM_STATE_OCCUPIED) {
+                free(table->slots[i].key.str);
+                mal_obj_release(table->slots[i].val);
+            }
+        }
+        free(table->slots);
+        table->slots = calloc(1, sizeof(*table->slots));
+        table->size = 0;
+        table->capacity = 1;
+    }
+
     mal_env_release(new_env);
     return result;
 }
@@ -264,7 +280,7 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         return true;
     }
 
-    //puts(input);
+    puts(input);
 
     mal_obj_t *root = read_str(reader, input);
     mal_obj_t *result = mal_eval(env, root);
