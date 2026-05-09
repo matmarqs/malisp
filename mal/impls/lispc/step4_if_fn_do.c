@@ -121,7 +121,7 @@ mal_obj_t *mal_handle_def(mal_env_t *env, mal_obj_t *list_obj) {
 mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
     mal_list_t *list = list_obj->data.list;
     MAL_OBJ_ASSERT(mal_list_len(list) == 3,
-                   "Error: let* expects 2 arguments. Got %d", mal_list_len(list));
+                   "Error: let* expects 2 arguments. Got %d", mal_list_len(list)-1);
 
     mal_obj_t *first = *mal_list_get(list, 1);
     MAL_OBJ_ASSERT(first->type == MAL_LIST && mal_list_len(first->data.list) % 2 == 0,
@@ -156,6 +156,7 @@ mal_obj_t *mal_handle_let(mal_env_t *env, mal_obj_t *list_obj) {
     // can not solve memory leaks cause by circular references
     // this happens in the case: (let* (a 5 f (fn* () a) a 10) (f))
     // the let* environment holds the closure f, which itself holds the let* environment
+    // TODO: this code does not handle the leak: (let* (f (fn* () f)) (f))
     if (!result || result->type != MAL_FUNCTION) {
         // No returned closure depends on this env, safe to break cycles.
         env_table_t *table = new_env->data;
