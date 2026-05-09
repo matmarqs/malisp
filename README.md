@@ -1,4 +1,3 @@
-Learning how to build a lisp interpreter using two main resources:
+# mal - Make a Lisp
 
-* <https://www.buildyourownlisp.com/>
-* <https://github.com/kanaka/mal>
+This is based on <https://github.com/kanaka/mal>.
