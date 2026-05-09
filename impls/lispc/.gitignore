@@ -3,3 +3,5 @@ step*_*
 **/*.srctrlbm
 **/*.srctrldb
 **/*.srctrlprj
+compile_commands.json
+.cache/

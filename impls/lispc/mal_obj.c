@@ -176,6 +176,13 @@ void mal_obj_print(mal_obj_t *obj) {
     }
 }
 
+void mal_obj_println(mal_obj_t *obj) {
+    if (obj && obj->type != MAL_EMPTY) {
+        mal_obj_print(obj);
+        putchar('\n');
+    }
+}
+
 char *mal_obj_sprint(mal_obj_t *obj) {
     static char _buffer[1024];
     if (!obj) {
@@ -214,4 +221,53 @@ char *mal_obj_sprint(mal_obj_t *obj) {
         break;
     }
     return _buffer;
+}
+
+bool mal_list_equals(mal_list_t *fst_list, mal_list_t *snd_list) {
+    int fst_len = mal_list_len(fst_list);
+    int snd_len = mal_list_len(snd_list);
+    if (fst_len != snd_len)
+        return false;
+    for (int i = 0; i < fst_len; i++) {
+        mal_obj_t *fst_i = *mal_list_get(fst_list, i);
+        mal_obj_t *snd_i = *mal_list_get(snd_list, i);
+        if (!mal_obj_equals(fst_i, snd_i))
+            return false;
+    }
+    return true;
+}
+
+bool mal_obj_equals(mal_obj_t *fst, mal_obj_t *snd)
+{
+    if (fst->type != snd->type) {
+        return false;
+    }
+    switch (fst->type) {
+    case MAL_LIST:
+        return mal_list_equals(fst->data.list, snd->data.list);
+    case MAL_NUMBER:
+        return fst->data.number == snd->data.number;
+    case MAL_SYMBOL:
+        return str_equals(fst->data.symbol, fst->data.symbol);
+    case MAL_ERROR:
+        return str_equals(fst->data.error, fst->data.error);
+    case MAL_BUILTIN:
+        return fst->data.builtin_fn == snd->data.builtin_fn;
+    case MAL_NIL:
+        return true;
+    case MAL_BOOLEAN:
+        return fst->data.boolean == snd->data.boolean;
+    case MAL_FUNCTION:
+        // return true if they have exactly the same pointers
+        // we could compare the objects themselves, but i don't really see the point
+        // the comparison would be expensive
+        return fst->data.function->env == snd->data.function->env &&
+            fst->data.function->params == snd->data.function->params &&
+            fst->data.function->body == snd->data.function->body;
+    case MAL_EMPTY:
+        return true;
+    default:
+        break;
+    }
+    return false;
 }

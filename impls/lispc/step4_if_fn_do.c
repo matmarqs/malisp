@@ -281,7 +281,7 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
         return true;
     }
 
-    puts(input);
+    //puts(input);
 
     mal_obj_t *root = read_str(reader, input);
     mal_obj_t *result = mal_eval(env, root);
