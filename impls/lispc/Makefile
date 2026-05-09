@@ -16,7 +16,7 @@ step2_eval: step2_eval.c reader.c mal_obj.c fun_hash.c str.c
 step3_env: step3_env.c reader.c mal_obj.c builtin.c str.c env.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-step4_if_fn_do: step4_if_fn_do.c reader.c mal_obj.c builtin.c str.c env.c
+step4_if_fn_do: step4_if_fn_do.c reader.c mal_obj.c core.c str.c env.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:

@@ -1,5 +1,5 @@
 #include "env.h"
-#include "builtin.h"
+#include "core.h"
 #include "hashmap.h"
 #include "mal_obj.h"
 #include "str.h"
@@ -93,8 +93,7 @@ static void mal_env_register_builtin(mal_env_t *env, char *symbol, fun_t func)
 }
 
 void mal_env_register_builtins(mal_env_t *env) {
-    mal_env_register_builtin(env, "+", builtin_add);
-    mal_env_register_builtin(env, "-", builtin_sub);
-    mal_env_register_builtin(env, "*", builtin_mul);
-    mal_env_register_builtin(env, "/", builtin_div);
+    for (int i = 0; i < core_ns_len; i++) {
+        mal_env_register_builtin(env, core_ns[i].symbol, core_ns[i].builtin_func);
+    }
 }

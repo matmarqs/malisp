@@ -1,4 +1,4 @@
-#include "builtin.h"
+#include "core.h"
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -68,3 +68,12 @@ mal_obj_t *builtin_div(mal_list_t *list) {
 
     return mal_obj_num(acc);
 }
+
+core_ns_t core_ns[] = {
+    { "+", builtin_add },
+    { "-", builtin_sub },
+    { "*", builtin_mul },
+    { "/", builtin_div },
+};
+
+const int core_ns_len = sizeof(core_ns) / sizeof(core_ns[0]);
