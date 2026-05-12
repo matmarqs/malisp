@@ -179,31 +179,32 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
             mal_obj_t *first = *mal_list_get(list, 0);
             if (first->type == MAL_SYMBOL) {
                 char *symbol = first->data.symbol.str;
-                int len = first->data.symbol.len;
-                if (len == 2 && strncmp(symbol, "if", 2) == 0)
+                int symblen = first->data.symbol.len;
+                if (symblen == 2 && strncmp(symbol, "if", 2) == 0)
                 {
                     EVAL_RETURN(mal_handle_if(env, node));
                 }
-                if (len == 4 && strncmp(symbol, "def!", 4) == 0)
+                if (symblen == 4 && strncmp(symbol, "def!", 4) == 0)
                 {
                     EVAL_RETURN(mal_handle_def(env, node));
                 }
-                if (len == 3 && strncmp(symbol, "fn*", 3) == 0)
+                if (symblen == 3 && strncmp(symbol, "fn*", 3) == 0)
                 {
                     EVAL_RETURN(mal_handle_fn(env, node));
                 }
-                if (len == 2 && strncmp(symbol, "do", 2) == 0)
+                if (symblen == 2 && strncmp(symbol, "do", 2) == 0)
                 {
                     mal_obj_t *evaluated;
-                    for (int i = 1; i < len-1; i++) {
+                    int listlen = mal_list_len(list);
+                    for (int i = 1; i < listlen-1; i++) {
                         evaluated = mal_eval(env, *mal_list_get(list, i));
                         mal_obj_release(evaluated);
                     }
                     // TCO
-                    node = *mal_list_get(list, len-1);
+                    node = *mal_list_get(list, listlen-1);
                     continue;
                 }
-                if (len == 4 && strncmp(symbol, "let*", 4) == 0)
+                if (symblen == 4 && strncmp(symbol, "let*", 4) == 0)
                 {
                     MAL_EVAL_ASSERT(mal_list_len(list) == 3,
                                     "Error: let* expects 2 arguments. Got %d", mal_list_len(list)-1);
