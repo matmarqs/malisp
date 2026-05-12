@@ -130,36 +130,10 @@ mal_obj_t *mal_handle_fn(mal_env_t *env, mal_obj_t *list_obj) {
     return mal_obj_function(binds, body, env);
 }
 
-mal_obj_t *mal_handle_if(mal_env_t *env, mal_obj_t *list_obj)
-{
-    mal_list_t *list = list_obj->data.list;
-    int len = mal_list_len(list);
-    MAL_OBJ_ASSERT(3 <= len && len <= 4, "Error: 'if' expects 2 or 3 parameters. Got %d", len-1);
-
-    mal_obj_t *first = mal_eval(env, *mal_list_get(list, 1));
-    bool cond = !((first->type == MAL_BOOLEAN && !first->data.boolean) || first->type == MAL_NIL);
-
-    mal_obj_t *result;
-
-    if (cond) {
-        result = mal_eval(env, *mal_list_get(list, 2));
-    }
-    else if (len < 4) { // there is no third parameter
-        result = mal_obj_nil();
-    }
-    else {
-        result = mal_eval(env, *mal_list_get(list, 3));
-    }
-
-    mal_obj_release(first);
-    return result;
-}
-
-
 #define EVAL_RETURN(expr) do { mal_obj_t *_r = (expr); mal_env_release(env); return _r; } while(0)
-#define MAL_EVAL_ASSERT(cond, err_fmt, ...)                             \
-    if (!(cond)) {                                                      \
-        EVAL_RETURN(mal_obj_error_format(err_fmt, ##__VA_ARGS__));      \
+#define MAL_EVAL_ASSERT(cond, err_fmt, ...)                         \
+    if (!(cond)) {                                                  \
+        EVAL_RETURN(mal_obj_error_format(err_fmt, ##__VA_ARGS__));  \
     }
 
 mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
@@ -182,7 +156,26 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
                 int symblen = first->data.symbol.len;
                 if (symblen == 2 && strncmp(symbol, "if", 2) == 0)
                 {
-                    EVAL_RETURN(mal_handle_if(env, node));
+                    int listlen = mal_list_len(list);
+                    MAL_OBJ_ASSERT(3 <= listlen && listlen <= 4, "Error: 'if' expects 2 or 3 parameters. Got %d", listlen-1);
+
+                    mal_obj_t *first = mal_eval(env, *mal_list_get(list, 1));
+                    bool cond = !((first->type == MAL_BOOLEAN && !first->data.boolean) || first->type == MAL_NIL);
+
+                    if (cond) {
+                        node = *mal_list_get(list, 2);
+                        mal_obj_release(first);
+                        continue;
+                    }
+                    else if (listlen < 4) { // there is no third parameter
+                        mal_obj_release(first);
+                        EVAL_RETURN(mal_obj_nil());
+                    }
+                    else {
+                        node = *mal_list_get(list, 3);
+                        mal_obj_release(first);
+                        continue;
+                    }
                 }
                 if (symblen == 4 && strncmp(symbol, "def!", 4) == 0)
                 {
