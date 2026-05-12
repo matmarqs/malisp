@@ -5,3 +5,4 @@ step*_*
 **/*.srctrlprj
 compile_commands.json
 .cache/
+**/out*.txt

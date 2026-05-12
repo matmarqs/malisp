@@ -155,18 +155,6 @@ mal_obj_t *mal_handle_if(mal_env_t *env, mal_obj_t *list_obj)
     return result;
 }
 
-mal_obj_t *mal_handle_do(mal_env_t *env, mal_obj_t *list_obj) {
-    mal_list_t *list = list_obj->data.list;
-    int len = mal_list_len(list);
-
-    mal_obj_t *evaluated;
-    for (int i = 1; i < len-1; i++) {
-        evaluated = mal_eval(env, *mal_list_get(list, i));
-        mal_obj_release(evaluated);
-    }
-
-    return mal_eval(env, *mal_list_get(list, len-1));
-}
 
 #define EVAL_RETURN(expr) do { mal_obj_t *_r = (expr); mal_env_release(env); return _r; } while(0)
 #define MAL_EVAL_ASSERT(cond, err_fmt, ...)                             \
@@ -206,17 +194,24 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
                 }
                 if (len == 2 && strncmp(symbol, "do", 2) == 0)
                 {
-                    EVAL_RETURN(mal_handle_do(env, node));
+                    mal_obj_t *evaluated;
+                    for (int i = 1; i < len-1; i++) {
+                        evaluated = mal_eval(env, *mal_list_get(list, i));
+                        mal_obj_release(evaluated);
+                    }
+                    // TCO
+                    node = *mal_list_get(list, len-1);
+                    continue;
                 }
                 if (len == 4 && strncmp(symbol, "let*", 4) == 0)
                 {
                     MAL_EVAL_ASSERT(mal_list_len(list) == 3,
-                                   "Error: let* expects 2 arguments. Got %d", mal_list_len(list)-1);
+                                    "Error: let* expects 2 arguments. Got %d", mal_list_len(list)-1);
 
                     mal_obj_t *first = *mal_list_get(list, 1);
                     MAL_EVAL_ASSERT(first->type == MAL_LIST && mal_list_len(first->data.list) % 2 == 0,
-                                   "Error: The first argument of let* must be like "
-                                   "(key1 expr1 key2 expr2 ...)");
+                                    "Error: The first argument of let* must be like "
+                                    "(key1 expr1 key2 expr2 ...)");
 
                     mal_list_t *bindings = first->data.list;
                     mal_env_t *new_env = mal_env_create(env);
@@ -241,7 +236,8 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
                         mal_obj_release(value); // because mal_env_set retains it
                     }
 
-                    // TCO
+                    // TCO: there will be a memory leak here because Reference Counting can't handle cycles
+                    // TODO: implement/use a GC
                     mal_env_release(env);
                     env = new_env;
                     node = *mal_list_get(list, 2);
