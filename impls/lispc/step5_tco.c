@@ -16,7 +16,13 @@ char *mal_read() {
     return input;
 }
 
-#define EVAL_RETURN(expr) do { mal_obj_t *_r = (expr); mal_env_release(env); return _r; } while(0)
+#define EVAL_RETURN(expr)                       \
+    do {                                        \
+        mal_obj_t *_r = (expr);                 \
+        mal_env_release(env);                   \
+        return _r;                              \
+    } while(0)
+
 #define MAL_EVAL_ASSERT(cond, err_fmt, ...)                         \
     if (!(cond)) {                                                  \
         EVAL_RETURN(mal_obj_error_format(err_fmt, ##__VA_ARGS__));  \
@@ -24,6 +30,7 @@ char *mal_read() {
 
 mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
     mal_env_retain(env);
+
     while (true) {
         if (!node) EVAL_RETURN(mal_obj_empty());
         switch (node->type) {
@@ -50,10 +57,12 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
                 if (symblen == 2 && strncmp(symbol, "if", 2) == 0)
                 {
                     int listlen = mal_list_len(list);
-                    MAL_OBJ_ASSERT(3 <= listlen && listlen <= 4, "Error: 'if' expects 2 or 3 parameters. Got %d", listlen-1);
+                    MAL_OBJ_ASSERT(3 <= listlen && listlen <= 4,
+                                   "Error: 'if' expects 2 or 3 parameters. Got %d", listlen-1);
 
                     mal_obj_t *first = mal_eval(env, *mal_list_get(list, 1));
-                    bool cond = !((first->type == MAL_BOOLEAN && !first->data.boolean) || first->type == MAL_NIL);
+                    bool cond = !((first->type == MAL_BOOLEAN && !first->data.boolean) ||
+                                  first->type == MAL_NIL);
 
                     if (cond) {
                         node = *mal_list_get(list, 2);
@@ -191,11 +200,11 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
                 mal_obj_t *err_feedback = NULL;
                 mal_env_t *call_env = mal_env_create(f->env);
 
-                if (mal_env_bind(call_env, f->params->data.list, eval_args, &err_feedback)) {
-                    // save and retain body BEFORE relasing func
-                    mal_obj_t *body = f->body;
-                    mal_obj_retain(body);
+                // store func in call_env to keep it alive during TCO
+                // the function owns f->body, so func must outlive the body
+                mal_env_set(call_env, str_from_cstr("__func__"), func);
 
+                if (mal_env_bind(call_env, f->params->data.list, eval_args, &err_feedback)) {
                     // cleanup eval_args and func
                     for (int i = 0; i < mal_list_len(eval_args); i++) {
                         mal_obj_release(*(mal_list_get(eval_args, i)));
@@ -206,7 +215,7 @@ mal_obj_t *mal_eval(mal_env_t *env, mal_obj_t *node) {
                     // TCO
                     mal_env_release(env);
                     env = call_env;
-                    node = body; // body is still alive
+                    node = f->body; // body is still alive
                     continue;
                 } else {
                     final_result = err_feedback;
