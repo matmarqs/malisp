@@ -98,6 +98,15 @@ mal_obj_t *mal_obj_empty() {
     return x;
 }
 
+mal_obj_t *mal_obj_string(char *token, int token_sz) {
+    mal_obj_t *x = malloc(sizeof(mal_obj_t));
+    x->type = MAL_STRING;
+    x->refcount = 1;
+    x->data.symbol.str = token;
+    x->data.symbol.len = token_sz;
+    return x;
+}
+
 void mal_obj_retain(mal_obj_t *obj) {
     if (obj) obj->refcount++;
 }
@@ -117,6 +126,9 @@ void mal_obj_release(mal_obj_t *x) {
             break;
         case MAL_ERROR:
             free(x->data.error.str);
+            break;
+        case MAL_STRING:
+            free(x->data.string.str);
             break;
         case MAL_FUNCTION:
             mal_obj_release(x->data.function->params);
@@ -139,6 +151,9 @@ void mal_obj_print(mal_obj_t *obj) {
     switch (obj->type) {
     case MAL_SYMBOL:
         printf("%.*s", obj->data.symbol.len, obj->data.symbol.str);
+        break;
+    case MAL_STRING:
+        printf("%.*s", obj->data.string.len, obj->data.string.str);
         break;
     case MAL_NUMBER:
         printf("%lld", (long long)obj->data.number);
@@ -193,6 +208,10 @@ char *mal_obj_sprint(mal_obj_t *obj) {
     case MAL_SYMBOL:
         snprintf(_buffer, sizeof(_buffer), "%.*s",
                  obj->data.symbol.len, obj->data.symbol.str);
+        break;
+    case MAL_STRING:
+        snprintf(_buffer, sizeof(_buffer), "%.*s",
+                 obj->data.string.len, obj->data.string.str);
         break;
     case MAL_NUMBER:
         snprintf(_buffer, sizeof(_buffer), "%lld", (long long)obj->data.number);

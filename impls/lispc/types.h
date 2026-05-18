@@ -16,6 +16,7 @@ enum {
     MAL_BOOLEAN,
     MAL_FUNCTION,
     MAL_EMPTY,                  /* this one shouldn't even be used or printed */
+    MAL_STRING,
 };
 
 typedef struct mal_list_t mal_list_t;
@@ -43,6 +44,7 @@ struct mal_obj_t {
         fun_t builtin_fn;
         bool boolean;
         mal_closure_t *function;
+        string_t string;
     } data;
 };
 

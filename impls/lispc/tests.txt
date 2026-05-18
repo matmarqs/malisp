@@ -239,3 +239,12 @@ y
 (do (prn (list 1 2 3)) (empty? 123))
 (do (def! fib (fn* (n) (if (<= n 1) 1 (+ (fib (- n 1)) (fib (- n 2)))))) (fib 5))
 (fib 5)
+"audsa'
+"iasjdia"
+"iasjdsia
+"isjdia"
+"siadjia\nsada'"
+(def! mystr "Hello world!")
+mystr
+(+ mystr 1)
+mystr

@@ -111,6 +111,41 @@ static mal_obj_t *read_atom(mal_reader_t *reader) {
         }
         return mal_obj_num(num);
     }
+    // string support
+    if (token[0] == '"') {
+        // unmatched string
+        if (token_size == 1 ||
+            token[token_size-1] != '"' ||
+             (token_size > 2 && token[token_size-2] == '\\')) {
+            return mal_obj_error_format("Error: Found unmatched double-quoted string: %.*s",
+                                        token_size, token);
+        }
+        // proper string
+        char *allocated_string = malloc(token_size + 1);
+        int j = 0;
+        for (int i = 1; i < token_size-1; i++) {
+            if (token[i] == '\\') {
+                if (token[i+1] == 'n') {
+                    allocated_string[j++] = '\n';
+                    i++;
+                    continue;
+                }
+                else if (token[i+1] == '"') {
+                    allocated_string[j++] = '"';
+                    i++;
+                    continue;
+                }
+                else {
+                    allocated_string[j++] = '\\';
+                    continue;
+                }
+            }
+            else {
+                allocated_string[j++] = token[i];
+            }
+        }
+        return mal_obj_string(allocated_string, j);
+    }
     if (token_size == 4 && strncmp(token, "true", 4) == 0) {
         return mal_obj_boolean(true);
     }
