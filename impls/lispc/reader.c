@@ -111,39 +111,43 @@ static mal_obj_t *read_atom(mal_reader_t *reader) {
         }
         return mal_obj_num(num);
     }
-    // string support
     if (token[0] == '"') {
-        // unmatched string
-        if (token_size == 1 ||
-            token[token_size-1] != '"' ||
-             (token_size > 2 && token[token_size-2] == '\\')) {
+        // Check if the closing quote is escaped (odd number of backslashes before it)
+        if (token_size == 1 || token[token_size-1] != '"') {
             return mal_obj_error_format("Error: Found unmatched double-quoted string: %.*s",
                                         token_size, token);
         }
-        // proper string
+
+        // Count backslashes before the closing quote
+        int backslash_count = 0;
+        for (int i = token_size - 2; i >= 0 && token[i] == '\\'; i--) {
+            backslash_count++;
+        }
+
+        // Odd backslashes means the quote is escaped — unmatched
+        if ((backslash_count & 1) == 1) {
+            return mal_obj_error_format("Error: Found unmatched double-quoted string: %.*s",
+                                        token_size, token);
+        }
+
+        // Proper string — allocate and process escapes
         char *allocated_string = malloc(token_size + 1);
         int j = 0;
-        for (int i = 1; i < token_size-1; i++) {
+        for (int i = 1; i < token_size - 1; i++) {
             if (token[i] == '\\') {
-                if (token[i+1] == 'n') {
-                    allocated_string[j++] = '\n';
-                    i++;
-                    continue;
+                i++; // skip the backslash, process next char
+                switch (token[i]) {
+                case 'n':  allocated_string[j++] = '\n'; break;
+                case '"':  allocated_string[j++] = '"';  break;
+                case '\\': allocated_string[j++] = '\\'; break;
+                default:   allocated_string[j++] = '\\';
+                    allocated_string[j++] = token[i]; break;
                 }
-                else if (token[i+1] == '"') {
-                    allocated_string[j++] = '"';
-                    i++;
-                    continue;
-                }
-                else {
-                    allocated_string[j++] = '\\';
-                    continue;
-                }
-            }
-            else {
+            } else {
                 allocated_string[j++] = token[i];
             }
         }
+        allocated_string[j] = '\0';
         return mal_obj_string(allocated_string, j);
     }
     if (token_size == 4 && strncmp(token, "true", 4) == 0) {

@@ -74,7 +74,7 @@ mal_obj_t *builtin_prn(mal_list_t *list) {
     MAL_OBJ_ASSERT(num_args == 1, "Error: 'prn' only accepts 1 argument. Got %d", num_args);
 
     mal_obj_t *first = *mal_list_get(list, 0);
-    mal_obj_println(first);
+    mal_obj_println(first, true);
 
     return mal_obj_nil();
 }

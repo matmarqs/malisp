@@ -143,7 +143,39 @@ void mal_obj_release(mal_obj_t *x) {
     }
 }
 
-void mal_obj_print(mal_obj_t *obj) {
+void mal_obj_pr_str(mal_obj_t *obj_s, bool print_readably) {
+    string_t s = obj_s->data.string;
+    if (!print_readably) {
+        printf("%.*s", s.len, s.str);
+    }
+    else {
+        char to_print[2*s.len+3];
+        int i = 0;
+        to_print[i++] = '"';
+        for (int j = 0; j < s.len; j++) {
+            if (s.str[j] == '\n') {
+                to_print[i++] = '\\';
+                to_print[i++] = 'n';
+            }
+            else if (s.str[j] == '"') {
+                to_print[i++] = '\\';
+                to_print[i++] = '"';
+            }
+            else if (s.str[j] == '\\') {
+                to_print[i++] = '\\';
+                to_print[i++] = '\\';
+            }
+            else {
+                to_print[i++] = s.str[j];
+            }
+        }
+        to_print[i++] = '"';
+        to_print[i] = '\0';
+        printf("%.*s", i, to_print);
+    }
+}
+
+void mal_obj_print(mal_obj_t *obj, bool print_readably) {
     if (!obj) {
         printf("<null>");
         return;
@@ -153,7 +185,7 @@ void mal_obj_print(mal_obj_t *obj) {
         printf("%.*s", obj->data.symbol.len, obj->data.symbol.str);
         break;
     case MAL_STRING:
-        printf("%.*s", obj->data.string.len, obj->data.string.str);
+        mal_obj_pr_str(obj, print_readably);
         break;
     case MAL_NUMBER:
         printf("%lld", (long long)obj->data.number);
@@ -161,7 +193,7 @@ void mal_obj_print(mal_obj_t *obj) {
     case MAL_LIST:
         putchar('(');
         for (int i = 0; i < mal_list_len(obj->data.list); i++) {
-            mal_obj_print(*(mal_list_get(obj->data.list, i)));
+            mal_obj_print(*(mal_list_get(obj->data.list, i)), print_readably);
             if (i != mal_list_len(obj->data.list) - 1) {
                 putchar(' ');
             }
@@ -191,9 +223,9 @@ void mal_obj_print(mal_obj_t *obj) {
     }
 }
 
-void mal_obj_println(mal_obj_t *obj) {
+void mal_obj_println(mal_obj_t *obj, bool print_readably) {
     if (obj && obj->type != MAL_EMPTY) {
-        mal_obj_print(obj);
+        mal_obj_print(obj, print_readably);
         putchar('\n');
     }
 }

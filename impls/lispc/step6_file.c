@@ -260,7 +260,7 @@ bool mal_rep(mal_reader_t *reader, mal_env_t *env) {
     mal_obj_t *result = mal_eval(env, root);
 
     free(input);
-    mal_obj_println(result);
+    mal_obj_println(result, true);
     mal_obj_release(result);
     mal_obj_release(root);
 
