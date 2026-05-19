@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "core.h"
+#include "reader.h"
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -236,6 +237,60 @@ mal_obj_t *builtin_greater_or_equal(mal_list_t *list) {
     return mal_obj_boolean((fst->data.number) >= (snd->data.number));
 }
 
+mal_obj_t *builtin_read_string(mal_list_t *list) {
+    MAL_OBJ_ASSERT(mal_list_len(list) == 1,
+                   "Error: 'read-string' expects 1 argument. Got %d", mal_list_len(list));
+
+    mal_obj_t *arg = *mal_list_get(list, 0);
+    MAL_OBJ_ASSERT(arg->type == MAL_STRING,
+                   "Error: 'read-string' expects a string argument");
+
+    mal_reader_t reader;
+    mal_reader_regex_init(&reader);
+    mal_obj_t *result = read_str(&reader, arg->data.string.str);
+    mal_reader_regex_free(&reader);
+    return result;
+}
+
+mal_obj_t *builtin_slurp(mal_list_t *list) {
+    MAL_OBJ_ASSERT(mal_list_len(list) == 1,
+                   "Error: 'slurp' expects 1 argument. Got %d", mal_list_len(list));
+
+    mal_obj_t *arg = *mal_list_get(list, 0);
+    MAL_OBJ_ASSERT(arg->type == MAL_STRING,
+                   "Error: 'slurp' expects a string argument");
+
+    FILE *f = fopen(arg->data.string.str, "rb");
+    if (!f) {
+        return mal_obj_error_format("Error: Could not open file '%s'", arg->data.string.str);
+    }
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    if (size < 0) {
+        fclose(f);
+        return mal_obj_error_format("Error: Could not determine size of file '%s'", arg->data.string.str);
+    }
+    rewind(f);
+
+    char *buf = malloc(size + 1);
+    if (!buf) {
+        fclose(f);
+        return mal_obj_error_format("Error: Out of memory reading file '%s'", arg->data.string.str);
+    }
+
+    size_t bytes_read = fread(buf, 1, size, f);
+    if (bytes_read != (size_t) size) {
+        fclose(f);
+        free(buf);
+        return mal_obj_error_format("Error: Error reading file '%s'", arg->data.string.str);
+    }
+    buf[size] = '\0';
+    fclose(f);
+
+    return mal_obj_string(buf, size);
+}
+
 core_ns_t core_ns[] = {
     { "+", builtin_add },
     { "-", builtin_sub },
@@ -254,6 +309,8 @@ core_ns_t core_ns[] = {
     { "<=", builtin_less_or_equal },
     { ">", builtin_greater },
     { ">=", builtin_greater_or_equal },
+    { "read-string", builtin_read_string },
+    { "slurp", builtin_slurp },
 };
 
 const int core_ns_len = sizeof(core_ns) / sizeof(core_ns[0]);
