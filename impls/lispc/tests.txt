@@ -248,3 +248,12 @@ y
 mystr
 (+ mystr 1)
 mystr
+(pr-str 1 2 3)
+(str 1 2 3)
+(prn (str 1 2 3))
+(prn 1 2 3)
+(println 1 2 3)
+(println "1 2 3")
+(println "Hello world!")
+(str "Hello" "world!")
+(str "Hello" " world!")

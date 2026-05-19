@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L // open_memstream
+#include <stdio.h>
+
 #include "core.h"
 
 #include <stdint.h>
@@ -70,13 +73,49 @@ mal_obj_t *builtin_div(mal_list_t *list) {
 }
 
 mal_obj_t *builtin_prn(mal_list_t *list) {
-    int num_args = mal_list_len(list);
-    MAL_OBJ_ASSERT(num_args == 1, "Error: 'prn' only accepts 1 argument. Got %d", num_args);
-
-    mal_obj_t *first = *mal_list_get(list, 0);
-    mal_obj_println(first, true);
-
+    for (int i = 0; i < mal_list_len(list); i++) {
+        mal_obj_fprint(stdout, *mal_list_get(list, i), true);
+        if (i != mal_list_len(list) - 1) {
+            putchar(' ');
+        }
+    }
+    putchar('\n');
     return mal_obj_nil();
+}
+
+mal_obj_t *builtin_println(mal_list_t *list) {
+    for (int i = 0; i < mal_list_len(list); i++) {
+        mal_obj_fprint(stdout, *mal_list_get(list, i), false);
+        if (i != mal_list_len(list) - 1) {
+            putchar(' ');
+        }
+    }
+    putchar('\n');
+    return mal_obj_nil();
+}
+
+mal_obj_t *builtin_pr_str(mal_list_t *list) {
+    char *buf;
+    size_t len;
+    FILE *f = open_memstream(&buf, &len);
+    for (int i = 0; i < mal_list_len(list); i++) {
+        mal_obj_fprint(f, *mal_list_get(list, i), true);
+        if (i != mal_list_len(list) - 1) {
+            fputc(' ', f);
+        }
+    }
+    fclose(f);
+    return mal_obj_string(buf, len);
+}
+
+mal_obj_t *builtin_str(mal_list_t *list) {
+    char *buf;
+    size_t len;
+    FILE *f = open_memstream(&buf, &len);
+    for (int i = 0; i < mal_list_len(list); i++)
+        mal_obj_fprint(f, *mal_list_get(list, i), false);
+    fclose(f);
+    return mal_obj_string(buf, len);
 }
 
 mal_obj_t *builtin_list(mal_list_t *list) {
@@ -203,6 +242,9 @@ core_ns_t core_ns[] = {
     { "*", builtin_mul },
     { "/", builtin_div },
     { "prn", builtin_prn },
+    { "pr-str", builtin_pr_str },
+    { "str", builtin_str },
+    { "println", builtin_println },
     { "list", builtin_list },
     { "list?", builtin_list_question_mark },
     { "empty?", builtin_empty_question_mark },

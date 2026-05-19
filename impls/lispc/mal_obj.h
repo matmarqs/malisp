@@ -4,6 +4,8 @@
 #include "types.h"
 #include "deque.h"
 
+#define _POSIX_C_SOURCE 200809L
+#include <stdio.h>
 #include <stdarg.h>
 
 DEFINE_DEQUE(mal_obj_t *, mal_list, mal_list_t);
@@ -14,6 +16,7 @@ mal_obj_t* mal_obj_list(int list_size);
 mal_obj_t* mal_obj_error_format(const char *fmt, ...);
 void mal_obj_retain(mal_obj_t *obj);
 void mal_obj_release(mal_obj_t *obj);
+void mal_obj_fprint(FILE *f, mal_obj_t *mal_object, bool print_readably);
 void mal_obj_print(mal_obj_t *mal_object, bool print_readably);
 void mal_obj_println(mal_obj_t *mal_object, bool print_readably);
 char *mal_obj_sprint(mal_obj_t *mal_object);

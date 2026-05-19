@@ -143,91 +143,75 @@ void mal_obj_release(mal_obj_t *x) {
     }
 }
 
-void mal_obj_pr_str(mal_obj_t *obj_s, bool print_readably) {
-    string_t s = obj_s->data.string;
-    if (!print_readably) {
-        printf("%.*s", s.len, s.str);
-    }
-    else {
-        char to_print[2*s.len+3];
-        int i = 0;
-        to_print[i++] = '"';
-        for (int j = 0; j < s.len; j++) {
-            if (s.str[j] == '\n') {
-                to_print[i++] = '\\';
-                to_print[i++] = 'n';
-            }
-            else if (s.str[j] == '"') {
-                to_print[i++] = '\\';
-                to_print[i++] = '"';
-            }
-            else if (s.str[j] == '\\') {
-                to_print[i++] = '\\';
-                to_print[i++] = '\\';
-            }
-            else {
-                to_print[i++] = s.str[j];
-            }
-        }
-        to_print[i++] = '"';
-        to_print[i] = '\0';
-        printf("%.*s", i, to_print);
-    }
-}
-
-void mal_obj_print(mal_obj_t *obj, bool print_readably) {
+void mal_obj_fprint(FILE *f, mal_obj_t *obj, bool print_readably) {
     if (!obj) {
-        printf("<null>");
+        fprintf(f, "<null>");
         return;
     }
     switch (obj->type) {
     case MAL_SYMBOL:
-        printf("%.*s", obj->data.symbol.len, obj->data.symbol.str);
+        fprintf(f, "%.*s", obj->data.symbol.len, obj->data.symbol.str);
         break;
-    case MAL_STRING:
-        mal_obj_pr_str(obj, print_readably);
+    case MAL_STRING: {
+        string_t s = obj->data.string;
+        if (!print_readably) {
+            fprintf(f, "%.*s", s.len, s.str);
+        } else {
+            fputc('"', f);
+            for (int i = 0; i < s.len; i++) {
+                char c = s.str[i];
+                if (c == '\n')      fputs("\\n", f);
+                else if (c == '"')  fputs("\\\"", f);
+                else if (c == '\\') fputs("\\\\", f);
+                else                fputc(c, f);
+            }
+            fputc('"', f);
+        }
         break;
+    }
     case MAL_NUMBER:
-        printf("%lld", (long long)obj->data.number);
+        fprintf(f, "%lld", (long long)obj->data.number);
         break;
     case MAL_LIST:
-        putchar('(');
+        fputc('(', f);
         for (int i = 0; i < mal_list_len(obj->data.list); i++) {
-            mal_obj_print(*(mal_list_get(obj->data.list, i)), print_readably);
+            mal_obj_fprint(f, *(mal_list_get(obj->data.list, i)), print_readably);
             if (i != mal_list_len(obj->data.list) - 1) {
-                putchar(' ');
+                fputc(' ', f);
             }
         }
-        putchar(')');
+        fputc(')', f);
         break;
     case MAL_ERROR:
-        printf("%.*s", obj->data.error.len, obj->data.error.str);
+        fprintf(f, "%.*s", obj->data.error.len, obj->data.error.str);
         break;
     case MAL_BUILTIN:
-        printf("<builtin>");
+        fprintf(f, "<builtin>");
         break;
     case MAL_FUNCTION:
-        printf("#<function>");
+        fprintf(f, "#<function>");
         break;
     case MAL_BOOLEAN:
-        printf(obj->data.boolean ? "true" : "false");
+        fprintf(f, obj->data.boolean ? "true" : "false");
         break;
     case MAL_NIL:
-        printf("nil");
+        fprintf(f, "nil");
         break;
     case MAL_EMPTY:
         break;
     default:
-        printf("<unknown type %d>", obj->type);
+        fprintf(f, "<unknown type %d>", obj->type);
         break;
     }
 }
 
+void mal_obj_print(mal_obj_t *obj, bool print_readably) {
+    mal_obj_fprint(stdout, obj, print_readably);
+}
+
 void mal_obj_println(mal_obj_t *obj, bool print_readably) {
-    if (obj && obj->type != MAL_EMPTY) {
-        mal_obj_print(obj, print_readably);
-        putchar('\n');
-    }
+    mal_obj_fprint(stdout, obj, print_readably);
+    putchar('\n');
 }
 
 char *mal_obj_sprint(mal_obj_t *obj) {
